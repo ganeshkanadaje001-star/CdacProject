@@ -6,6 +6,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cdac.custom_exception.AccessDeniedException;
 import com.cdac.custom_exception.ResourseNotFoundException;
 import com.cdac.dto.CategoryReqDto;
 import com.cdac.dto.CategoryResDto;
@@ -14,6 +15,7 @@ import com.cdac.entity.Role;
 import com.cdac.entity.User;
 import com.cdac.repository.CategoryRepository;
 import com.cdac.repository.UserReopsitory;
+import com.cdac.security.SecurityUtil;
 
 import lombok.AllArgsConstructor;
 
@@ -25,13 +27,15 @@ public class CategoryServiceImpl implements CategoryService {
 	private final ModelMapper model;
 	private final CategoryRepository catRepo;
 	private final UserReopsitory userRepo;
+	private final SecurityUtil securityUtil;
 
 	@Override
-	public CategoryResDto addCategory(CategoryReqDto catReq, Long userId) {
+	public CategoryResDto addCategory(CategoryReqDto catReq) {
+		Long userId=securityUtil.getCurrentUserId();
 		User user = userRepo.findById(userId)
 				.orElseThrow(() -> new ResourseNotFoundException("User is not for this id"));
 		if (user.getRole() != Role.ADMIN) {
-			throw new RuntimeException("Access Denied: Only Admins can add categories!");
+			throw new AccessDeniedException("Access Denied: Only Admins can add categories!");
 		}
 		Category cat = model.map(catReq, Category.class);
 		catRepo.save(cat);
@@ -49,11 +53,12 @@ public class CategoryServiceImpl implements CategoryService {
 	            .toList();
 	}
 	@Override
-	public String deleteCategory(Long catId, Long userId) {
+	public String deleteCategory(Long catId) {
+		Long userId=securityUtil.getCurrentUserId();
 		User user = userRepo.findById(userId)
 				.orElseThrow(() -> new ResourseNotFoundException("User is not for this id"));
 		if (user.getRole() != Role.ADMIN) {
-			throw new RuntimeException("Access Denied: Only Admins can add categories!");
+			throw new AccessDeniedException("Access Denied: Only Admins can add categories!");
 		}
 		catRepo.deleteById(catId);
 
@@ -61,17 +66,18 @@ public class CategoryServiceImpl implements CategoryService {
 
 	}
 	@Override
-	public CategoryResDto modifyCategory(Long catId, CategoryReqDto catReq, Long userId) {
+	public CategoryResDto modifyCategory(Long catId, CategoryReqDto catReq) {
+		Long userId=securityUtil.getCurrentUserId();
 		User user = userRepo.findById(userId)
 				.orElseThrow(() -> new ResourseNotFoundException("User is not for this id"));
 		if (user.getRole() != Role.ADMIN) {
-			throw new RuntimeException("Access Denied: Only Admins can add categories!");
+			throw new AccessDeniedException("Access Denied: Only Admins can add categories!");
 		}
 		Category category=catRepo.findById(catId).orElseThrow(()->new ResourseNotFoundException("Category is not for this id"));
 		
 		model.map(catReq,category);
 		
-        catRepo.save(category);
+         catRepo.save(category);
 		return model.map(category, CategoryResDto.class);
 
 	}

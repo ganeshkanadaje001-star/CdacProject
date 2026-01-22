@@ -24,10 +24,10 @@ public class CategoryController {
 
 	private final CategoryService catSer;
 	
-	@PostMapping("/add/{userId}")
-	public ResponseEntity<?> addCategory(@RequestBody @Valid CategoryReqDto catReq,@PathVariable Long userId){
+	@PostMapping("/add")
+	public ResponseEntity<?> addCategory(@RequestBody @Valid CategoryReqDto catReq){
 		
-		return ResponseEntity.status(HttpStatus.CREATED).body(catSer.addCategory(catReq,userId));
+		return ResponseEntity.status(HttpStatus.CREATED).body(catSer.addCategory(catReq));
 	}
 	@GetMapping("/all")
 public ResponseEntity<?> allCategory(){
@@ -35,12 +35,13 @@ public ResponseEntity<?> allCategory(){
 		return ResponseEntity.ok(catSer.listCategories());
 	}
 	@DeleteMapping("/delete")
-	public ResponseEntity<?> deleteCat(Long catId,Long userId){
-		return ResponseEntity.ok(catSer.deleteCategory(catId,userId));
+	public ResponseEntity<?> deleteCat(Long catId){
+		return ResponseEntity.ok(catSer.deleteCategory(catId));
 	}
-	@PutMapping("/update/{userId}/{catId}")
+	@PutMapping("/update/{catId}")
 	public ResponseEntity<?> updateCat(@RequestBody @Valid CategoryReqDto catReq,@PathVariable Long catId,@PathVariable Long userId){
-		return ResponseEntity.ok(catSer.modifyCategory(catId,catReq,userId));
+		return ResponseEntity.ok(catSer.modifyCategory(catId,catReq));
 	}
+	
 
 }

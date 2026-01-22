@@ -12,7 +12,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.cdac.controller.CategoryController;
+import com.cdac.custom_exception.AccessDeniedException;
 import com.cdac.custom_exception.ResourseNotFoundException;
+import com.cdac.custom_exception.UsernameNotFoundException;
 import com.cdac.dto.ExceptioResponse;
 
 @RestControllerAdvice
@@ -39,5 +41,13 @@ public class GlobalException {
 		.collect(Collectors.toMap(FieldError::getField,FieldError::getDefaultMessage));
 		
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorFieldMap);
+	}
+	@ExceptionHandler(UsernameNotFoundException.class)
+	public ResponseEntity<?> handleUsernameNotFoundException(RuntimeException r){
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ExceptioResponse(r.getMessage(), "Failed"));
+	}
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<?> handleAccessDeniedException(RuntimeException r){
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ExceptioResponse(r.getMessage(), "Failed"));
 	}
 }

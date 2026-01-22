@@ -26,7 +26,7 @@ public class Order {
     @Column(name = "total_amount")
     private Double totalAmount;
 
-    private String status;
+    private OrderStatus status;
 
     // Unidirectional: Order knows User, but User doesn't know Order
     @ManyToOne
@@ -34,13 +34,9 @@ public class Order {
     private User user;
     
 
-    @ManyToMany
-    @JoinTable(
-        name = "order_products", 
-        joinColumns = @JoinColumn(name = "order_id"),
-        inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    private List<Products> products;
+    @ManyToOne
+    @JoinColumn(name = "product_id", nullable = false)
+    private Products product;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "payment_id") 

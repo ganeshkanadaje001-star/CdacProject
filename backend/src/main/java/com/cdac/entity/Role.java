@@ -1,5 +1,5 @@
 package com.cdac.entity;
 
 public enum Role {
-ADMIN,FARMER,CUSTOMER
+ADMIN,CUSTOMER
 }
