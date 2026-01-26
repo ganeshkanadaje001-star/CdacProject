@@ -1,8 +1,5 @@
 package com.cdac.service;
 
-import java.util.Optional;
-import java.util.Set;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +11,11 @@ import com.cdac.entity.Cart;
 import com.cdac.entity.CartItem;
 import com.cdac.entity.Products;
 import com.cdac.entity.User;
-import com.cdac.repository.CartItemRepository;
 import com.cdac.repository.CartRepository;
 import com.cdac.repository.ProductRepository;
 import com.cdac.repository.UserReopsitory;
 import com.cdac.security.SecurityUtil;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -30,10 +25,10 @@ public class CartServiceImpl implements CartService {
 	private final UserReopsitory userRepo;
 	private final ProductRepository prodRepo;
 	private final CartRepository cartRepo;
-	private final CartItemRepository cartItemRepository;
 	private final SecurityUtil securityUtil;
 	private final ModelMapper model;
 
+	@Override
 	public CartResponseDto addToCartService(CartRequestDto dto) {
 
 		Long userId = securityUtil.getCurrentUserId();
@@ -50,15 +45,14 @@ public class CartServiceImpl implements CartService {
 				.orElseThrow(() -> new ResourseNotFoundException("Product not found"));
 
 		CartItem cartItem = cart.getCartItems().stream()
-				.filter(item -> item.getProduct().getProductId().equals(product.getProductId())).findFirst()
-				.orElse(null);
+				.filter(item -> item.getProduct().getId().equals(product.getId())).findFirst().orElse(null);
 
 		if (cartItem == null) {
 			cartItem = new CartItem();
 			cartItem.setProduct(product);
 			cartItem.setQuantity(dto.getQuantity());
 			cartItem.setTotalPrice(dto.getQuantity() * product.getPrice());
-			cart.getCartItems().add(cartItem); 
+			cart.getCartItems().add(cartItem);
 		} else {
 			cartItem.setQuantity(cartItem.getQuantity() + dto.getQuantity());
 			cartItem.setTotalPrice(cartItem.getQuantity() * product.getPrice());
@@ -69,121 +63,105 @@ public class CartServiceImpl implements CartService {
 		cart.setTotalAmount(total);
 
 		Cart savedCart = cartRepo.save(cart);
-        
-		CartResponseDto cartResponseDto= model.map(savedCart, CartResponseDto.class);
-		cartResponseDto.getCartItems().forEach(f ->
-        savedCart.getCartItems().stream()
-                .filter(ci -> ci.getCartItemId().equals(f.getCartItemId()))
-                .findFirst()
-                .ifPresent(ci ->
-                        f.setProductId(ci.getProduct().getProductId()))
-);
+
+		CartResponseDto cartResponseDto = model.map(savedCart, CartResponseDto.class);
+		for (int i = 0; i < savedCart.getCartItems().size(); i++) {
+			cartResponseDto.getCartItems().get(i).setProductId(savedCart.getCartItems().get(i).getProduct().getId());
+			cartResponseDto.getCartItems().get(i).setCartItemId(savedCart.getCartItems().get(i).getId());
+		}
 		return cartResponseDto;
 	}
+
 	@Override
 	public CartResponseDto removeCartItem(Long productId) {
 
-	    Long userId = securityUtil.getCurrentUserId();
+		Long userId = securityUtil.getCurrentUserId();
 
-	    Cart cart = cartRepo.findByUserId(userId)
-	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-	    CartItem cartItem = cart.getCartItems().stream()
-	            .filter(item -> item.getProduct().getProductId().equals(productId))
-	            .findFirst()
-	            .orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
+		CartItem cartItem = cart.getCartItems().stream().filter(item -> item.getProduct().getId().equals(productId))
+				.findFirst().orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
 
-	    cart.getCartItems().remove(cartItem); // orphanRemoval = true
+		cart.getCartItems().remove(cartItem); // orphanRemoval = true
 
-	    recalculateCartTotal(cart);
+		recalculateCartTotal(cart);
 
-	    Cart savedCart = cartRepo.save(cart);
-	    CartResponseDto response = model.map(savedCart, CartResponseDto.class);
+		Cart savedCart = cartRepo.save(cart);
+		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
 
-	    savedCart.getCartItems().forEach(ci ->
-	        response.getCartItems().forEach(dto -> {
-	            if (ci.getCartItemId().equals(dto.getCartItemId())) {
-	                dto.setProductId(ci.getProduct().getProductId());
-	            }
-	        })
-	    );
+		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
+			if (ci.getId().equals(dto.getCartItemId())) {
+				dto.setProductId(ci.getProduct().getId());
+			}
+		}));
 
-	    return response;
+		return response;
 	}
-	
+
 	@Override
 	public void clearCart() {
 
-	    Long userId = securityUtil.getCurrentUserId();
+		Long userId = securityUtil.getCurrentUserId();
 
-	    Cart cart = cartRepo.findByUserId(userId)
-	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-	    cart.getCartItems().clear(); // orphanRemoval deletes rows
-	    cart.setTotalAmount(0.0);
+		cart.getCartItems().clear(); // orphanRemoval deletes rows
+		cart.setTotalAmount(0.0);
 
-	    cartRepo.save(cart);
+		cartRepo.save(cart);
 	}
+
 	@Override
 	public CartResponseDto updateCartItem(CartRequestDto dto) {
 
-	    Long userId = securityUtil.getCurrentUserId();
+		Long userId = securityUtil.getCurrentUserId();
 
-	    Cart cart = cartRepo.findByUserId(userId)
-	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-	    CartItem cartItem = cart.getCartItems().stream()
-	            .filter(item -> item.getProduct().getProductId().equals(dto.getProductId()))
-	            .findFirst()
-	            .orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
+		CartItem cartItem = cart.getCartItems().stream()
+				.filter(item -> item.getProduct().getId().equals(dto.getProductId())).findFirst()
+				.orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
 
-	    cartItem.setQuantity(dto.getQuantity());
-	    cartItem.setTotalPrice(dto.getQuantity() * cartItem.getProduct().getPrice());
+		cartItem.setQuantity(dto.getQuantity());
+		cartItem.setTotalPrice(dto.getQuantity() * cartItem.getProduct().getPrice());
 
-	    recalculateCartTotal(cart);
+		recalculateCartTotal(cart);
 
-	    Cart savedCart = cartRepo.save(cart);
-	    CartResponseDto response = model.map(savedCart, CartResponseDto.class);
+		Cart savedCart = cartRepo.save(cart);
+		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
 
-	    savedCart.getCartItems().forEach(ci ->
-	        response.getCartItems().forEach(dtoItem -> {
-	            if (ci.getCartItemId().equals(dtoItem.getCartItemId())) {
-	                dtoItem.setProductId(ci.getProduct().getProductId());
-	            }
-	        })
-	    );
+		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dtoItem -> {
+			if (ci.getId().equals(dtoItem.getCartItemId())) {
+				dtoItem.setProductId(ci.getProduct().getId());
+			}
+		}));
 
-	    return response;
+		return response;
 	}
+
 	@Override
 	public CartResponseDto getMyCart() {
 
-	    Long userId = securityUtil.getCurrentUserId();
+		Long userId = securityUtil.getCurrentUserId();
 
-	    Cart cart = cartRepo.findByUserId(userId)
-	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-	    CartResponseDto response = model.map(cart, CartResponseDto.class);
+		CartResponseDto response = model.map(cart, CartResponseDto.class);
 
-	    // set productId manually (same logic you already used)
-	    cart.getCartItems().forEach(ci ->
-	        response.getCartItems().forEach(dto -> {
-	            if (ci.getCartItemId().equals(dto.getCartItemId())) {
-	                dto.setProductId(ci.getProduct().getProductId());
-	            }
-	        })
-	    );
+		// set productId manually (same logic you already used)
+		cart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
+			if (ci.getId().equals(dto.getCartItemId())) {
+				dto.setProductId(ci.getProduct().getId());
+			}
+		}));
 
-	    return response;
+		return response;
 	}
 
 	private void recalculateCartTotal(Cart cart) {
-	    double total = cart.getCartItems()
-	            .stream()
-	            .mapToDouble(CartItem::getTotalPrice)
-	            .sum();
+		double total = cart.getCartItems().stream().mapToDouble(CartItem::getTotalPrice).sum();
 
-	    cart.setTotalAmount(total);
+		cart.setTotalAmount(total);
 	}
 
 }

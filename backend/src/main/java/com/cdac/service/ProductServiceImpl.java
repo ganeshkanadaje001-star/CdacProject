@@ -37,7 +37,7 @@ public class ProductServiceImpl implements ProductService {
 	  
 	    ProductResDto dto = model.map(product, ProductResDto.class);
 	    
-	    dto.setId(product.getProductId());
+	    dto.setId(product.getId());
 	    dto.setCategoryId(product.getCategory().getId());
 	    dto.setCategoryName(product.getCategory().getName());
 	    
@@ -66,7 +66,7 @@ public class ProductServiceImpl implements ProductService {
 		Products savedProd = prodRepo.save(prod);
 		
 		ProductResDto resDto= model.map(savedProd, ProductResDto.class);
-		resDto.setId(savedProd.getProductId());
+		resDto.setId(savedProd.getId());
 		resDto.setCategoryName(cat.getName());
 		resDto.setCategoryId(cat.getId());
 		return resDto;

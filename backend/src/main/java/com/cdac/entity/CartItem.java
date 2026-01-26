@@ -8,16 +8,12 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "cart_items")
+@AttributeOverride(name = "id", column = @Column(name = "cartitem_id"))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItem {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cart_item_id")
-    private Long cartItemId; // Using your preferred name
+public class CartItem extends BaseEntity{
 
     @NotNull
     private Integer quantity;
@@ -35,23 +31,4 @@ public class CartItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Products product;
     
-    // NOTE: Because you used @JoinColumn(name="cart_id") in the Cart entity,
-    // Hibernate will AUTOMATICALLY add a 'cart_id' column to this table 
-    // in the database, even though you don't see it here in the Java class.
-
-    // --- EQUALS & HASHCODE (MANDATORY for Set<CartItem>) ---
-    // If you don't have this, your Set won't work properly.
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CartItem cartItem = (CartItem) o;
-        return Objects.equals(cartItemId, cartItem.cartItemId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cartItemId);
-    }
 }

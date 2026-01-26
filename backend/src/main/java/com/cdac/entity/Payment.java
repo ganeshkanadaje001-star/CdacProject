@@ -7,16 +7,12 @@ import java.util.Date;
 
 @Entity
 @Table(name = "payments")
+@AttributeOverride(name = "id", column = @Column(name = "payment_id"))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payment_id")
-    private Long paymentId;
+public class Payment extends BaseEntity{
 
     @Column(nullable = false)
     private Double amount;

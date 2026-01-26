@@ -1,5 +1,8 @@
 package com.cdac.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,4 +28,8 @@ public class User extends BaseEntity {
 	private String phone;
 	@Enumerated(EnumType.STRING) // col type - varchar | enum
 	private Role role;
+	
+	 @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	    @JoinColumn(name = "user_id") // FK in addresses table
+	    private List<Address> addresses = new ArrayList<>();
 }

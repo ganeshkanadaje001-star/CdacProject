@@ -6,17 +6,16 @@ import lombok.*;
 
 @Entity
 @Table(name = "products")
+@AttributeOverride(name = "id", column = @Column(name = "product_id"))
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString(exclude = {"category","userfarmer"})
-public class Products {
+@ToString(exclude = {"category"})
+public class Products extends BaseEntity{
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "product_id")
-    private Long productId;
+    
+    
     @Column(name = "product_name")
     @NotNull
     private String name;
@@ -38,7 +37,4 @@ public class Products {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
     
-//    @ManyToOne
-//    @JoinColumn(name = "farmer_id", nullable = false)
-//    private User userfarmer;
 }

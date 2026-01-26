@@ -12,12 +12,9 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
-@Table(name = "carts")
-public class Cart {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "cart")
+@AttributeOverride(name = "id", column = @Column(name = "cart_id"))
+public class Cart extends BaseEntity{
 
     private Double totalAmount = 0.0;
 

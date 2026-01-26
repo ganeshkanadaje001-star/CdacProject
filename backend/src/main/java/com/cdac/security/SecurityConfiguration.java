@@ -52,7 +52,7 @@ public class SecurityConfiguration {
 		// add url based authentication n authorization rules
 		http.authorizeHttpRequests(request ->
 //configure public end points
-		request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/User/signin", "/User/signup", "/User/pwd-encryption").permitAll()
+		request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/User/signin", "/User/SignUp", "/User/pwd-encryption").permitAll()
 		//in flight request from React front end
 				.requestMatchers(HttpMethod.OPTIONS).permitAll()
 				// ---------- PUBLIC READ APIs ----------
@@ -67,6 +67,7 @@ public class SecurityConfiguration {
 		        .requestMatchers(HttpMethod.PUT, "/categories/**").hasAuthority("ADMIN")
 		        .requestMatchers(HttpMethod.DELETE, "/categories/**").hasAuthority("ADMIN")
 		        .requestMatchers(HttpMethod.POST, "/cart/**").hasAuthority("CUSTOMER")
+		        .requestMatchers(HttpMethod.POST, "/order/**").hasAuthority("CUSTOMER")
 				.anyRequest().authenticated())
 				//add custom jwt filter before 1st authentication filter -UsernamePasswordAuthenticationFilter
 				.addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);

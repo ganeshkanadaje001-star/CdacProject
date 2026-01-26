@@ -1,7 +1,7 @@
 package com.cdac.dto;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,5 +17,5 @@ public class CartResponseDto {
     private Long id;                
     private Double totalAmount = 0.0;
 
-    private Set<CartItemResponseDto> cartItems = new HashSet<>();
+    private List<CartItemResponseDto> cartItems = new ArrayList<>();
 }
