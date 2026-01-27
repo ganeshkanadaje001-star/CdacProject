@@ -30,4 +30,9 @@ public class OrderController {
 	public ResponseEntity<?> particularOrder(){
 		return ResponseEntity.ok(orderService.getMyOrder());
 	}
+	
+	@GetMapping("/all")
+	public ResponseEntity<?> allOrders(){
+		return ResponseEntity.ok(orderService.getAllOrders());
+	}
 }

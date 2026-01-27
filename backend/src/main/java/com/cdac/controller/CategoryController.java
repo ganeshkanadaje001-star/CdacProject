@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdac.dto.CategoryReqDto;
@@ -35,11 +36,11 @@ public ResponseEntity<?> allCategory(){
 		return ResponseEntity.ok(catSer.listCategories());
 	}
 	@DeleteMapping("/delete")
-	public ResponseEntity<?> deleteCat(Long catId){
+	public ResponseEntity<?> deleteCat(@RequestParam Long catId){
 		return ResponseEntity.ok(catSer.deleteCategory(catId));
 	}
 	@PutMapping("/update/{catId}")
-	public ResponseEntity<?> updateCat(@RequestBody @Valid CategoryReqDto catReq,@PathVariable Long catId,@PathVariable Long userId){
+	public ResponseEntity<?> updateCat(@RequestBody @Valid CategoryReqDto catReq,@PathVariable Long catId){
 		return ResponseEntity.ok(catSer.modifyCategory(catId,catReq));
 	}
 	

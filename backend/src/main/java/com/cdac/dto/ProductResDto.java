@@ -13,6 +13,7 @@ public class ProductResDto {
     private String description;
     private double price;
     private int stock;
+    private String imageUrl;
     private String categoryName;
     private Long categoryId; 
 }

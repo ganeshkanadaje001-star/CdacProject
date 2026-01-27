@@ -87,6 +87,7 @@ public class OrderServiceImpl implements OrderService {
 
 	    OrderItemResDto itemDto = new OrderItemResDto();
 	    itemDto.setProductId(product.getId());
+	    itemDto.setProductName(product.getName());
 	    itemDto.setQuantity(reqDto.getQuantity());
 	    itemDto.setPriceAtPurchase(product.getPrice());
 	    itemDto.setSubTotal(product.getPrice() * reqDto.getQuantity());
@@ -107,7 +108,16 @@ public class OrderServiceImpl implements OrderService {
 	    // 2️⃣ Fetch orders (NO exception if empty)
 	    List<Order> orders = orderRepo.findByUser(user);
 
-	    // 3️⃣ Convert to response DTO list
+	    return mapToOrderResDtoList(orders);
+	}
+
+	@Override
+	public List<OrderResDto> getAllOrders() {
+		List<Order> orders = orderRepo.findAll();
+		return mapToOrderResDtoList(orders);
+	}
+
+	private List<OrderResDto> mapToOrderResDtoList(List<Order> orders) {
 	    List<OrderResDto> responseList = new ArrayList<>();
 
 	    for (Order order : orders) {
@@ -116,14 +126,13 @@ public class OrderServiceImpl implements OrderService {
 	        dto.setOrderDate(order.getOrderDate());
 	        dto.setStatus(order.getStatus().name());
 	        dto.setTotalAmount(order.getTotalAmount());
- //           dto.setItems(dto.getItems());
-	        responseList.add(dto);
 	        
 	        List<OrderItemResDto> itemDtos = new ArrayList<>();
 
 	        for (OrderItem item : order.getOrderItems()) {
 	            OrderItemResDto itemDto = new OrderItemResDto();
 	            itemDto.setProductId(item.getProduct().getId());
+	            itemDto.setProductName(item.getProduct().getName());
 	            itemDto.setQuantity(item.getQuantity());
 	            itemDto.setPriceAtPurchase(item.getPriceAtPurchase());
 	            itemDto.setSubTotal(item.getPriceAtPurchase() * item.getQuantity());
@@ -131,9 +140,8 @@ public class OrderServiceImpl implements OrderService {
 	        }
 
 	        dto.setItems(itemDtos);
+	        responseList.add(dto);
 	    }
-
-	    // 4️⃣ Return list (can be empty)
 	    return responseList;
 	}
 

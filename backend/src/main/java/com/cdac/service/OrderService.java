@@ -8,4 +8,5 @@ import com.cdac.dto.OrderResDto;
 public interface OrderService {
 OrderResDto addOrder(OrderReqDto orderReqDto);
 List<OrderResDto> getMyOrder();
+List<OrderResDto> getAllOrders();
 }
