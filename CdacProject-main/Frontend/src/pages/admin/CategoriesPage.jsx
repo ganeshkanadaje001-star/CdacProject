@@ -169,7 +169,7 @@ const CategoriesPage = () => {
         </div>
       )}
 
-      {/* ================= ADD CATEGORY MODAL ================= */}
+      {/* ================= ADD CATEGORY MODAL ================.....= */}
       {showAdd && (
         <div style={modalOverlay}>
           <div style={modalBox}>
