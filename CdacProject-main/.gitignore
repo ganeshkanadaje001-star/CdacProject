@@ -1,0 +1,9 @@
+# Eclipse / STS
+.metadata/
+
+# Frontend
+frontend/node_modules/
+
+# Environment secrets
+.env
+.vscode/
