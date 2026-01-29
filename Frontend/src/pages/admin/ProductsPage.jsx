@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
 import axiosInstance from "../../api/axiosInstance";
 import { API } from "../../api/endpoints";
+import { getImageUrl } from "../../utils/image";
 
 const ProductsPage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [editing, setEditing] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [includeDisabled, setIncludeDisabled] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -21,22 +25,7 @@ const ProductsPage = () => {
     categoryId: null,
   });
 
-  // --- HELPER TO HANDLE CLOUDINARY URLS ---
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return "https://via.placeholder.com/300?text=No+Image";
-
-    // 1. If it's a full URL (starts with http/https), return it as is
-    if (imagePath.startsWith("http") || imagePath.startsWith("data:")) {
-      return imagePath;
-    }
-
-    // 2. If your DB only stores the filename (e.g., "shoe.png"), uncomment and configure this:
-    // const cloudName = "YOUR_CLOUD_NAME"; 
-    // return `https://res.cloudinary.com/${cloudName}/image/upload/v1/${imagePath}`;
-
-    // Default return
-    return imagePath;
-  };
+  // image helper now centralized in utils/image
 
   const fetchProducts = async () => {
     try {
@@ -50,13 +39,23 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+  const toggleActive = async (p) => {
     try {
-      await axiosInstance.delete(API.PRODUCTS.DELETE(id));
+      const payload = {
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        stock: p.stock,
+        imageUrl: p.imageUrl,
+        isActive: !p.isActive,
+        categoryId: p.categoryId,
+      };
+      await axiosInstance.put(API.PRODUCTS.UPDATE(p.id), payload);
       await fetchProducts();
+      setSuccess(!p.isActive ? "Product enabled" : "Product disabled");
+      setTimeout(() => setSuccess(""), 1200);
     } catch (err) {
-      alert("Failed to delete product");
+      alert("Failed to update product status");
     }
   };
 
@@ -91,14 +90,32 @@ const ProductsPage = () => {
     fetchProducts();
   }, []);
 
+  const filteredProducts = useMemo(() => {
+    const byStatus = products.filter((p) => includeDisabled ? true : (p.isActive ?? true));
+    if (!searchTerm) return byStatus;
+    const q = searchTerm.trim().toLowerCase();
+    return byStatus.filter((p) => (p.name || "").toLowerCase().includes(q));
+  }, [products, includeDisabled, searchTerm]);
+
   return (
     <AdminLayout>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
         <h1>Products</h1>
+        <input
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ ...inputStyle, maxWidth: "280px" }}
+        />
+        <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "#334155", fontSize: "13px" }}>
+          <input type="checkbox" checked={includeDisabled} onChange={(e) => setIncludeDisabled(e.target.checked)} />
+          Include disabled
+        </label>
         <button style={headerBtnStyle} onClick={() => navigate("/admin/products/add")}>
           + Add Product
         </button>
       </div>
+      {success && <div style={{ marginBottom: "12px", background: "#dcfce7", color: "#166534", padding: "10px", borderRadius: "6px" }}>{success}</div>}
 
       {loading ? (
         <p>Loading...</p>
@@ -107,7 +124,7 @@ const ProductsPage = () => {
       ) : (
         // --- GRID LAYOUT ---
         <div style={gridContainerStyle}>
-          {products.map((p) => (
+          {filteredProducts.map((p) => (
             <div key={p.id} style={cardStyle}>
               
               {/* IMAGE SECTION */}
@@ -168,10 +185,26 @@ const ProductsPage = () => {
                     <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>
                       Category: {p.categoryName || "N/A"}
                     </p>
+                    <div style={{ marginTop: "6px" }}>
+                      <span style={{
+                        background: (p.isActive ?? true) ? "#dcfce7" : "#fee2e2",
+                        color: (p.isActive ?? true) ? "#166534" : "#b91c1c",
+                        padding: "4px 8px",
+                        borderRadius: "999px",
+                        fontSize: "12px"
+                      }}>
+                        {(p.isActive ?? true) ? "Active" : "Disabled"}
+                      </span>
+                    </div>
                     
                     <div style={{ display: "flex", gap: "10px", marginTop: "auto", paddingTop: "15px" }}>
                       <button style={updateBtnStyle} onClick={() => openEdit(p)}>Update</button>
-                      <button style={deleteBtnStyle} onClick={() => handleDelete(p.id)}>Delete</button>
+                      <button
+                        style={{ ...deleteBtnStyle, background: (p.isActive ?? true) ? "#ef4444" : "#16a34a" }}
+                        onClick={() => toggleActive(p)}
+                      >
+                        {(p.isActive ?? true) ? "Disable" : "Enable"}
+                      </button>
                     </div>
                   </>
                 )}

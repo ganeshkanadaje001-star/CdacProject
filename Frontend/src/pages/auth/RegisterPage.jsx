@@ -16,11 +16,31 @@ const RegisterPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isValidEmail = (email) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidPhone = (p) =>
+    /^[6-9]\d{9}$/.test(p);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
+      if (!isValidEmail(form.email)) {
+        setError("Please enter a valid email address");
+        setLoading(false);
+        return;
+      }
+      if ((form.password || "").length < 6) {
+        setError("Password must be at least 6 characters");
+        setLoading(false);
+        return;
+      }
+      if (!isValidPhone(form.phone)) {
+        setError("Phone must be a valid 10-digit Indian mobile number");
+        setLoading(false);
+        return;
+      }
       await axiosInstance.post(API.AUTH.REGISTER, form);
       navigate("/login", { replace: true });
     } catch (err) {

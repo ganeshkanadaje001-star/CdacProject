@@ -20,6 +20,8 @@ const AddProductPage = () => {
     imageFile: null,
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -37,7 +39,14 @@ const AddProductPage = () => {
   };
 
   const handleFileChange = (e) => {
-    setForm({ ...form, imageFile: e.target.files[0] || null });
+    const file = e.target.files[0] || null;
+    setForm({ ...form, imageFile: file });
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl("");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -45,6 +54,26 @@ const AddProductPage = () => {
     setError("");
     setLoading(true);
     try {
+      if (!form.name || form.name.trim().length === 0) {
+        setError("Product name is required");
+        setLoading(false);
+        return;
+      }
+      if (Number(form.price) <= 0) {
+        setError("Price must be greater than 0");
+        setLoading(false);
+        return;
+      }
+      if (Number(form.stock) < 0) {
+        setError("Stock cannot be negative");
+        setLoading(false);
+        return;
+      }
+      if (!form.categoryId) {
+        setError("Please select a category");
+        setLoading(false);
+        return;
+      }
       let imageUrl = "";
       if (form.imageFile) {
         const fd = new FormData();
@@ -73,7 +102,8 @@ const AddProductPage = () => {
       };
 
       await axiosInstance.post(API.PRODUCTS.CREATE, payload);
-      navigate("/admin/products", { replace: true });
+      setSuccess("Product created successfully");
+      setTimeout(() => navigate("/admin/products", { replace: true }), 800);
     } catch (err) {
       setError("Failed to add product");
     } finally {
@@ -85,6 +115,7 @@ const AddProductPage = () => {
     <AdminLayout>
       <h1 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Add Product</h1>
       {error && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "10px", borderRadius: "6px", marginBottom: "12px" }}>{error}</div>}
+      {success && <div style={{ background: "#dcfce7", color: "#166534", padding: "10px", borderRadius: "6px", marginBottom: "12px" }}>{success}</div>}
 
       <form onSubmit={handleSubmit} style={{ background: "#fff", padding: "16px", borderRadius: "8px", maxWidth: "600px" }}>
         <label style={labelStyle}>Name</label>
@@ -109,6 +140,11 @@ const AddProductPage = () => {
 
         <label style={labelStyle}>Image</label>
         <input type="file" accept="image/*" onChange={handleFileChange} style={{ marginBottom: "12px" }} />
+        {previewUrl && (
+          <div style={{ marginBottom: "12px", border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden", width: "240px", height: "180px" }}>
+            <img src={previewUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+        )}
 
         <div>
           <button type="submit" disabled={loading} style={btnStyle}>

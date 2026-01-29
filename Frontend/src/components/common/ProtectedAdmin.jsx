@@ -9,8 +9,15 @@ const ProtectedAdmin = ({ children }) => {
   }
 
   const decoded = decodeJwt(token);
+  const role = decoded?.user_role;
+  const exp = decoded?.exp;
 
-  if (!decoded || decoded.user_role !== "ADMIN") {
+  if (exp && exp * 1000 < Date.now()) {
+    localStorage.removeItem("token");
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role !== "ADMIN") {
     return <Navigate to="/login" replace />;
   }
 
@@ -18,4 +25,3 @@ const ProtectedAdmin = ({ children }) => {
 };
 
 export default ProtectedAdmin;
-

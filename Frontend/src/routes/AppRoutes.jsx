@@ -8,16 +8,29 @@ import CategoriesPage from "../pages/admin/CategoriesPage";
 import OrdersPage from "../pages/admin/OrdersPage";
 import ProtectedAdmin from "../components/common/ProtectedAdmin";
 import ProtectedCustomer from "../components/common/ProtectedCustomer";
-import CustomerDashboardPage from "../pages/customer/DashboardPage";
+// Customer Pages
+import HomePage from "../pages/customer/HomePage";
+import ProductDetailsPage from "../pages/customer/ProductDetailsPage";
+import CartPage from "../pages/customer/CartPage";
+import CheckoutPage from "../pages/customer/CheckoutPage";
+import ProfilePage from "../pages/customer/ProfilePage";
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-
+      {/* PUBLIC ROUTES */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/product/:id" element={<ProductDetailsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
+      {/* CUSTOMER ROUTES */}
+      <Route path="/cart" element={<ProtectedCustomer><CartPage /></ProtectedCustomer>} />
+      <Route path="/checkout" element={<ProtectedCustomer><CheckoutPage /></ProtectedCustomer>} />
+      <Route path="/profile" element={<ProtectedCustomer><ProfilePage /></ProtectedCustomer>} />
+      <Route path="/customer/dashboard" element={<Navigate to="/" replace />} />
+
+      {/* ADMIN ROUTES */}
       <Route
         path="/admin/dashboard"
         element={
@@ -59,14 +72,6 @@ const AppRoutes = () => {
           <ProtectedAdmin>
             <OrdersPage />
           </ProtectedAdmin>
-        }
-      />
-      <Route
-        path="/customer/dashboard"
-        element={
-          <ProtectedCustomer>
-            <CustomerDashboardPage />
-          </ProtectedCustomer>
         }
       />
     </Routes>

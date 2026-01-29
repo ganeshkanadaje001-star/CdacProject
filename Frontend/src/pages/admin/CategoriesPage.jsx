@@ -7,6 +7,7 @@ const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     name: "",
@@ -30,6 +31,8 @@ const CategoriesPage = () => {
     try {
       await axiosInstance.delete(API.CATEGORIES.DELETE(id));
       await fetchCategories();
+      setSuccess("Category deleted successfully");
+      setTimeout(() => setSuccess(""), 1200);
     } catch (err) {
       alert("Failed to delete category");
     }
@@ -48,6 +51,8 @@ const CategoriesPage = () => {
       await axiosInstance.put(API.CATEGORIES.UPDATE(editing), form);
       setEditing(null);
       await fetchCategories();
+      setSuccess("Category updated successfully");
+      setTimeout(() => setSuccess(""), 1200);
     } catch (err) {
       alert("Failed to update category");
     }
@@ -116,6 +121,7 @@ const CategoriesPage = () => {
           </tbody>
         </table>
       )}
+      {success && <div style={{ marginTop: "12px", background: "#dcfce7", color: "#166534", padding: "10px", borderRadius: "6px" }}>{success}</div>}
     </AdminLayout>
   );
 };

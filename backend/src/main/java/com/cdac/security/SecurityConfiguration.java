@@ -81,7 +81,15 @@ public class SecurityConfiguration {
                     // ---------- CUSTOMER APIs ----------
                     .requestMatchers(HttpMethod.POST, "/cart/**").hasRole("CUSTOMER")
                     .requestMatchers(HttpMethod.POST, "/order/**").hasRole("CUSTOMER")
+                    .requestMatchers(HttpMethod.POST, "/addresses/**").hasRole("CUSTOMER")
+                 // ---------- ADDRESS APIs ----------
+                 // Only customers can manage (add/delete) their addresses
+                 .requestMatchers(HttpMethod.POST, "/addresses/**").hasRole("CUSTOMER")
+                 .requestMatchers(HttpMethod.DELETE, "/addresses/**").hasRole("CUSTOMER")
+                 .requestMatchers(HttpMethod.PUT, "/addresses/**").hasRole("CUSTOMER")
 
+                 // Both can view, but Service layer will filter the results
+                 .requestMatchers(HttpMethod.GET, "/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
                     .anyRequest().authenticated()
             )
 

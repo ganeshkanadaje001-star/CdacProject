@@ -15,6 +15,7 @@ import com.cdac.dto.OrderResDto;
 import com.cdac.entity.Cart;
 import com.cdac.entity.CartItem;
 import com.cdac.entity.Order;
+import com.cdac.entity.OrderAddress;
 import com.cdac.entity.OrderItem;
 import com.cdac.entity.OrderStatus;
 import com.cdac.entity.Products;
@@ -45,54 +46,78 @@ public class OrderServiceImpl implements OrderService {
 	@Override
 	public OrderResDto addOrder(OrderReqDto reqDto) {
 
-	    // 1️⃣ Get logged-in user
 	    Long userId = securityUtil.getCurrentUserId();
 	    User user = userRepo.findById(userId)
 	            .orElseThrow(() -> new ResourseNotFoundException("User not found"));
 
-	    // 2️⃣ Fetch product
-	    Products product = productRepo.findById(reqDto.getProductId())
-	            .orElseThrow(() -> new ResourseNotFoundException("Product not found"));
+	    Cart cart = cartRepo.findByUserId(userId)
+	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-	    if (reqDto.getQuantity() <= 0) {
-	        throw new IllegalArgumentException("Invalid quantity");
+	    if (cart.getCartItems().isEmpty()) {
+	        throw new IllegalArgumentException("Cart is empty");
 	    }
 
-	    // 3️⃣ Create Order
+	    com.cdac.entity.Address selectedAddress = user.getAddresses().stream()
+	            .filter(a -> a.getId().equals(reqDto.getAddressId()))
+	            .findFirst()
+	            .orElseThrow(() -> new ResourseNotFoundException("Address not found"));
+
 	    Order order = new Order();
 	    order.setUser(user);
 	    order.setOrderDate(new Date());
 	    order.setStatus(OrderStatus.PENDING);
 
-	    // 4️⃣ Create ONE OrderItem
-	    OrderItem orderItem = new OrderItem();
-	    orderItem.setProduct(product);
-	    orderItem.setQuantity(reqDto.getQuantity());
-	    orderItem.setPriceAtPurchase(product.getPrice()); // ✅ FIXED
+	    OrderAddress shipping = new OrderAddress(
+	            selectedAddress.getAddressLine(),
+	            selectedAddress.getCity(),
+	            selectedAddress.getState(),
+	            selectedAddress.getPincode(),
+	            selectedAddress.getCountry()
+	    );
+	    order.setShippingAddress(shipping);
 
-	    double totalAmount = product.getPrice() * reqDto.getQuantity();
+	    List<OrderItem> orderItems = new ArrayList<>();
+	    double totalAmount = 0.0;
 
-	    order.setOrderItems(List.of(orderItem));
+	    for (CartItem cartItem : cart.getCartItems()) {
+	        Products product = cartItem.getProduct();
+
+	        OrderItem orderItem = new OrderItem();
+	        orderItem.setProduct(product);
+	        orderItem.setQuantity(cartItem.getQuantity());
+	        orderItem.setPriceAtPurchase(product.getPrice());
+
+	        orderItems.add(orderItem);
+	        totalAmount += product.getPrice() * cartItem.getQuantity();
+	    }
+
+	    order.setOrderItems(orderItems);
 	    order.setTotalAmount(totalAmount);
 
-	    // 5️⃣ Save order
 	    Order savedOrder = orderRepo.save(order);
 
-	    // 6️⃣ Build response
+	    cart.getCartItems().clear();
+	    cart.setTotalAmount(0.0);
+	    cartRepo.save(cart);
+
 	    OrderResDto response = new OrderResDto();
 	    response.setOrderId(savedOrder.getId());
 	    response.setOrderDate(savedOrder.getOrderDate());
 	    response.setStatus(savedOrder.getStatus().name());
 	    response.setTotalAmount(savedOrder.getTotalAmount());
 
-	    OrderItemResDto itemDto = new OrderItemResDto();
-	    itemDto.setProductId(product.getId());
-	    itemDto.setProductName(product.getName());
-	    itemDto.setQuantity(reqDto.getQuantity());
-	    itemDto.setPriceAtPurchase(product.getPrice());
-	    itemDto.setSubTotal(product.getPrice() * reqDto.getQuantity());
+	    List<OrderItemResDto> itemDtos = new ArrayList<>();
+	    for (OrderItem item : savedOrder.getOrderItems()) {
+	        OrderItemResDto itemDto = new OrderItemResDto();
+	        itemDto.setProductId(item.getProduct().getId());
+	        itemDto.setProductName(item.getProduct().getName());
+	        itemDto.setQuantity(item.getQuantity());
+	        itemDto.setPriceAtPurchase(item.getPriceAtPurchase());
+	        itemDto.setSubTotal(item.getPriceAtPurchase() * item.getQuantity());
+	        itemDtos.add(itemDto);
+	    }
 
-	    response.setItems(List.of(itemDto));
+	    response.setItems(itemDtos);
 
 	    return response;
 	}

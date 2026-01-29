@@ -29,6 +29,12 @@ export const API = {
     DELETE: (id) => `${BASE_URL}/categories/delete?catId=${id}`, // Controller: @DeleteMapping("/delete") public ResponseEntity<?> deleteCat(Long catId) -> RequestParam implied if not @PathVariable
   },
 
+  ADDRESS: {
+    GET_ALL: `${BASE_URL}/addresses/getAll`,
+    ADD: `${BASE_URL}/addresses/add`,
+    DELETE: (id) => `${BASE_URL}/addresses/${id}`,
+  },
+
   CART: {
     GET: `${BASE_URL}/cart/all`,
     ADD: `${BASE_URL}/cart/AddCart`,

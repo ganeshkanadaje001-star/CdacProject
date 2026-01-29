@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -52,4 +53,7 @@ public class Order extends BaseEntity {
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "payment_id")
 	private Payment payment;
+	
+    @Embedded
+    private OrderAddress shippingAddress;
 }
