@@ -15,7 +15,7 @@ import lombok.Setter;
 public class CartResponseDto {
 
     private Long id;                
-    private Double totalAmount = 0.0;
+    private Double totalAmount;
 
     private List<CartItemResponseDto> cartItems = new ArrayList<>();
 }

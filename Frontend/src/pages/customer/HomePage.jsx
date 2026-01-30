@@ -8,6 +8,9 @@ import { getImageUrl } from "../../utils/image";
 const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState("");
+  const [addingId, setAddingId] = useState(null);
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -18,12 +21,17 @@ const HomePage = () => {
     fetchProducts();
   }, []);
 
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
+  };
+
   const fetchProducts = async () => {
     try {
       const res = await axiosInstance.get(API.PRODUCTS.GET_ALL);
       setProducts(res.data);
     } catch {
-      console.error("Failed to fetch products");
+      showToast("Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -31,16 +39,19 @@ const HomePage = () => {
 
   const handleAddToCart = async (e, product) => {
     e.stopPropagation();
+    setAddingId(product.id);
     try {
       await axiosInstance.post(API.CART.ADD, {
         productId: product.id,
-        quantity: 1
+        quantity: 1,
       });
-      alert("Added to cart!");
       window.dispatchEvent(new Event("cart:updated"));
+      showToast("Added to cart 🛒");
     } catch (err) {
       if (err.response?.status === 401) navigate("/login");
-      else alert("Failed to add to cart");
+      else showToast("Failed to add to cart");
+    } finally {
+      setAddingId(null);
     }
   };
 
@@ -49,18 +60,18 @@ const HomePage = () => {
     try {
       await axiosInstance.post(API.CART.ADD, {
         productId: product.id,
-        quantity: 1
+        quantity: 1,
       });
       navigate("/checkout");
     } catch (err) {
       if (err.response?.status === 401) navigate("/login");
-      else alert("Failed to start checkout");
+      else showToast("Failed to start checkout");
     }
   };
 
-  const filteredProducts = products.filter(p => {
+  const filteredProducts = products.filter((p) => {
     if (!(p.isActive ?? true)) return false;
-    if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    if (searchQuery && !p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
       return false;
     if (catQuery && Number(p.categoryId) !== Number(catQuery)) return false;
     return true;
@@ -68,8 +79,23 @@ const HomePage = () => {
 
   return (
     <CustomerLayout>
-      {/* INLINE CSS */}
+      {/* TOAST */}
+      {toast && <div className="toast">{toast}</div>}
+
+      {/* CSS */}
       <style>{`
+        .toast {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          background: #111827;
+          color: #fff;
+          padding: 12px 18px;
+          border-radius: 12px;
+          font-weight: 600;
+          z-index: 999;
+        }
+
         .horizontal-list {
           display: flex;
           gap: 20px;
@@ -77,24 +103,12 @@ const HomePage = () => {
           padding-bottom: 10px;
         }
 
-        .horizontal-list::-webkit-scrollbar {
-          height: 8px;
-        }
-
-        .horizontal-list::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-
         .product-card {
           min-width: 260px;
-          max-width: 260px;
           background: #fff;
           border-radius: 16px;
           border: 1px solid #e5e7eb;
           cursor: pointer;
-          position: relative;
-          overflow: hidden;
           transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
@@ -113,42 +127,41 @@ const HomePage = () => {
           border-radius: 999px;
         }
 
-        .in {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .out {
-          background: #fee2e2;
-          color: #991b1b;
-        }
+        .in { background: #dcfce7; color: #166534; }
+        .out { background: #fee2e2; color: #991b1b; }
 
         .img-box {
           height: 180px;
           background: #f1f5f9;
           overflow: hidden;
+          border-radius: 16px 16px 0 0;
         }
 
         .img-box img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-
-        .product-card:hover img {
-          transform: scale(1.08);
         }
 
         .card-body {
           padding: 14px;
         }
 
-        .card-body h3 {
-          font-size: 15px;
-          font-weight: 600;
+        .title {
+          font-size: 16px;
+          font-weight: 700;
           color: #111827;
           margin-bottom: 6px;
+        }
+
+        .desc {
+          font-size: 13px;
+          color: #64748b;
+          margin-bottom: 10px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .price {
@@ -165,21 +178,26 @@ const HomePage = () => {
 
         button {
           flex: 1;
-          padding: 8px;
-          border-radius: 10px;
+          padding: 10px;
+          border-radius: 12px;
           border: none;
           font-weight: 600;
           cursor: pointer;
         }
 
         .buy {
-          background: #16a34a;
+          background: linear-gradient(135deg, #22c55e, #16a34a);
           color: #fff;
         }
 
         .cart {
-          background: #2563eb;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
           color: #fff;
+        }
+
+        .cart.loading {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .disabled {
@@ -188,8 +206,7 @@ const HomePage = () => {
           cursor: not-allowed;
         }
 
-        .loading,
-        .empty {
+        .loading {
           text-align: center;
           padding: 60px;
           color: #64748b;
@@ -198,13 +215,9 @@ const HomePage = () => {
 
       {loading ? (
         <div className="loading">Loading products…</div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="empty">
-          <h2>No products found</h2>
-        </div>
       ) : (
         <div className="horizontal-list">
-          {filteredProducts.map(p => (
+          {filteredProducts.map((p) => (
             <div
               key={p.id}
               className="product-card"
@@ -219,22 +232,22 @@ const HomePage = () => {
               </div>
 
               <div className="card-body">
-                <h3>{p.name}</h3>
-                <p className="price">${p.price.toFixed(2)}</p>
+                <h3 className="title">{p.name}</h3>
+                <p className="desc">{p.description}</p>
+                <p className="price">${p.price?.toFixed(2)}</p>
 
                 {p.stock > 0 ? (
                   <div className="btn-row">
-                    <button
-                      className="buy"
-                      onClick={e => handleBuyNow(e, p)}
-                    >
+                    <button className="buy" onClick={(e) => handleBuyNow(e, p)}>
                       Buy
                     </button>
+
                     <button
-                      className="cart"
-                      onClick={e => handleAddToCart(e, p)}
+                      className={`cart ${addingId === p.id ? "loading" : ""}`}
+                      onClick={(e) => handleAddToCart(e, p)}
+                      disabled={addingId === p.id}
                     >
-                      Cart
+                      {addingId === p.id ? "Adding…" : "Cart"}
                     </button>
                   </div>
                 ) : (
