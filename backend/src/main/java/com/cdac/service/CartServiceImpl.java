@@ -1,10 +1,15 @@
 package com.cdac.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cdac.custom_exception.ResourseNotFoundException;
+import com.cdac.dto.CartItemDto;
+import com.cdac.dto.CartItemResponseDto;
 import com.cdac.dto.CartRequestDto;
 import com.cdac.dto.CartResponseDto;
 import com.cdac.entity.Cart;
@@ -22,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
+
 	private final UserReopsitory userRepo;
 	private final ProductRepository prodRepo;
 	private final CartRepository cartRepo;
@@ -34,7 +40,8 @@ public class CartServiceImpl implements CartService {
 		Long userId = securityUtil.getCurrentUserId();
 
 		Cart cart = cartRepo.findByUserId(userId).orElseGet(() -> {
-			User user = userRepo.findById(userId).orElseThrow(() -> new ResourseNotFoundException("User not found"));
+			User user = userRepo.findById(userId)
+					.orElseThrow(() -> new ResourseNotFoundException("User not found"));
 			Cart newCart = new Cart();
 			newCart.setUser(user);
 			newCart.setTotalAmount(0.0);
@@ -45,7 +52,9 @@ public class CartServiceImpl implements CartService {
 				.orElseThrow(() -> new ResourseNotFoundException("Product not found"));
 
 		CartItem cartItem = cart.getCartItems().stream()
-				.filter(item -> item.getProduct().getId().equals(product.getId())).findFirst().orElse(null);
+				.filter(item -> item.getProduct().getId().equals(product.getId()))
+				.findFirst()
+				.orElse(null);
 
 		if (cartItem == null) {
 			cartItem = new CartItem();
@@ -58,18 +67,19 @@ public class CartServiceImpl implements CartService {
 			cartItem.setTotalPrice(cartItem.getQuantity() * product.getPrice());
 		}
 
-		double total = cart.getCartItems().stream().mapToDouble(CartItem::getTotalPrice).sum();
-
-		cart.setTotalAmount(total);
+		recalculateCartTotal(cart);
 
 		Cart savedCart = cartRepo.save(cart);
 
-		CartResponseDto cartResponseDto = model.map(savedCart, CartResponseDto.class);
+		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
 		for (int i = 0; i < savedCart.getCartItems().size(); i++) {
-			cartResponseDto.getCartItems().get(i).setProductId(savedCart.getCartItems().get(i).getProduct().getId());
-			cartResponseDto.getCartItems().get(i).setCartItemId(savedCart.getCartItems().get(i).getId());
+			response.getCartItems().get(i).setProductId(
+					savedCart.getCartItems().get(i).getProduct().getId());
+			response.getCartItems().get(i).setCartItemId(
+					savedCart.getCartItems().get(i).getId());
 		}
-		return cartResponseDto;
+
+		return response;
 	}
 
 	@Override
@@ -77,23 +87,28 @@ public class CartServiceImpl implements CartService {
 
 		Long userId = securityUtil.getCurrentUserId();
 
-		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId)
+				.orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-		CartItem cartItem = cart.getCartItems().stream().filter(item -> item.getProduct().getId().equals(productId))
-				.findFirst().orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
+		CartItem cartItem = cart.getCartItems().stream()
+				.filter(item -> item.getProduct().getId().equals(productId))
+				.findFirst()
+				.orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
 
-		cart.getCartItems().remove(cartItem); // orphanRemoval = true
+		cart.getCartItems().remove(cartItem);
 
 		recalculateCartTotal(cart);
 
 		Cart savedCart = cartRepo.save(cart);
-		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
 
-		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
-			if (ci.getId().equals(dto.getCartItemId())) {
-				dto.setProductId(ci.getProduct().getId());
-			}
-		}));
+		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
+		savedCart.getCartItems().forEach(ci ->
+				response.getCartItems().forEach(dto -> {
+					if (ci.getId().equals(dto.getCartItemId())) {
+						dto.setProductId(ci.getProduct().getId());
+					}
+				})
+		);
 
 		return response;
 	}
@@ -103,9 +118,10 @@ public class CartServiceImpl implements CartService {
 
 		Long userId = securityUtil.getCurrentUserId();
 
-		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId)
+				.orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-		cart.getCartItems().clear(); // orphanRemoval deletes rows
+		cart.getCartItems().clear();
 		cart.setTotalAmount(0.0);
 
 		cartRepo.save(cart);
@@ -116,10 +132,12 @@ public class CartServiceImpl implements CartService {
 
 		Long userId = securityUtil.getCurrentUserId();
 
-		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+		Cart cart = cartRepo.findByUserId(userId)
+				.orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
 		CartItem cartItem = cart.getCartItems().stream()
-				.filter(item -> item.getProduct().getId().equals(dto.getProductId())).findFirst()
+				.filter(item -> item.getProduct().getId().equals(dto.getProductId()))
+				.findFirst()
 				.orElseThrow(() -> new ResourseNotFoundException("Item not found in cart"));
 
 		cartItem.setQuantity(dto.getQuantity());
@@ -128,40 +146,56 @@ public class CartServiceImpl implements CartService {
 		recalculateCartTotal(cart);
 
 		Cart savedCart = cartRepo.save(cart);
-		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
 
-		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dtoItem -> {
-			if (ci.getId().equals(dtoItem.getCartItemId())) {
-				dtoItem.setProductId(ci.getProduct().getId());
-			}
-		}));
+		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
+		savedCart.getCartItems().forEach(ci ->
+				response.getCartItems().forEach(dtoItem -> {
+					if (ci.getId().equals(dtoItem.getCartItemId())) {
+						dtoItem.setProductId(ci.getProduct().getId());
+					}
+				})
+		);
 
 		return response;
 	}
 
+	// ✅ REPLACED METHOD (THIS FIXES YOUR ISSUE)
 	@Override
 	public CartResponseDto getMyCart() {
 
-		Long userId = securityUtil.getCurrentUserId();
+	    Long userId = securityUtil.getCurrentUserId();
 
-		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
+	    Cart cart = cartRepo.findByUserId(userId)
+	            .orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-		CartResponseDto response = model.map(cart, CartResponseDto.class);
+	    CartResponseDto response = new CartResponseDto();
+	    response.setId(cart.getId());
+	    response.setTotalAmount(cart.getTotalAmount());
 
-		// set productId manually (same logic you already used)
-		cart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
-			if (ci.getId().equals(dto.getCartItemId())) {
-				dto.setProductId(ci.getProduct().getId());
-			}
-		}));
+	    List<CartItemResponseDto> itemDtos = new ArrayList<>();
 
-		return response;
+	    for (CartItem item : cart.getCartItems()) {
+
+	        CartItemResponseDto dto = new CartItemResponseDto();
+	        dto.setCartItemId(item.getId());
+	        dto.setProductId(item.getProduct().getId());
+	        dto.setProductName(item.getProduct().getName());
+	        dto.setImageUrl(item.getProduct().getImageUrl());
+	        dto.setQuantity(item.getQuantity());
+	        dto.setTotalPrice(item.getTotalPrice());
+
+	        itemDtos.add(dto); // ✅ now types match
+	    }
+
+	    response.setCartItems(itemDtos);
+	    return response;
 	}
 
 	private void recalculateCartTotal(Cart cart) {
-		double total = cart.getCartItems().stream().mapToDouble(CartItem::getTotalPrice).sum();
-
+		double total = cart.getCartItems()
+				.stream()
+				.mapToDouble(CartItem::getTotalPrice)
+				.sum();
 		cart.setTotalAmount(total);
 	}
-
 }
