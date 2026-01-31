@@ -211,6 +211,16 @@ const HomePage = () => {
           padding: 60px;
           color: #64748b;
         }
+          .product-card {
+  background: #ffffff;
+  border-radius: 16px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.15);
+}
+
       `}</style>
 
       {loading ? (
