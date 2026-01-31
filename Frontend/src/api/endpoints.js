@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
 
 export const API = {
   AUTH: {
@@ -50,5 +50,9 @@ export const API = {
   },
   MEDIA: {
     UPLOAD: `${BASE_URL}/media/upload`,
+  },
+  PAYMENTS: {
+    CREATE: `${BASE_URL}/payments/create`,
+    VERIFY: `${BASE_URL}/payments/verify`,
   },
 };

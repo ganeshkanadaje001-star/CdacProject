@@ -32,6 +32,15 @@ const CheckoutPage = () => {
     });
   }, []);
 
+  const loadRazorpayScript = () => new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
@@ -48,10 +57,42 @@ const CheckoutPage = () => {
     if (!selectedAddr) return alert("Please select address");
     setLoading(true);
     try {
-      const res = await axiosInstance.post(API.ORDERS.PLACE, { addressId: selectedAddr });
-      setOrderInfo(res.data);
-      setStep(3);
-    } catch {
+      const orderRes = await axiosInstance.post(API.ORDERS.PLACE, { addressId: selectedAddr });
+      const { orderId, totalAmount } = orderRes.data;
+
+      const payRes = await axiosInstance.post(API.PAYMENTS.CREATE, { orderId, amount: totalAmount });
+      const { razorpayOrderId, amount, currency } = payRes.data;
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) throw new Error("Razorpay SDK not loaded");
+
+      const key = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SATMpZTlmHmY8v";
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "FreshBasket",
+        description: `Order #${orderId}`,
+        order_id: razorpayOrderId,
+        handler: async function (response) {
+          try {
+            await axiosInstance.post(API.PAYMENTS.VERIFY, {
+              razorpayOrderId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            setOrderInfo(orderRes.data);
+            setStep(3);
+            window.dispatchEvent(new Event("cart:updated"));
+          } catch (_err) {
+            alert("Payment verification failed");
+          }
+        },
+        theme: { color: "#16a34a" },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (_err) {
       alert("Order failed");
     } finally {
       setLoading(false);
@@ -162,7 +203,7 @@ const CheckoutPage = () => {
               <h3>Payment Method</h3>
 
               <div style={paymentBox}>
-                💳 Credit / Debit Card (Demo)
+                🪙 Razorpay (UPI/Card/NetBanking)
               </div>
 
               <div style={totalRow}>

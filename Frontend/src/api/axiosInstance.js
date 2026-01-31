@@ -2,7 +2,7 @@ import axios from "axios";
 import { decodeJwt } from "../utils/jwt";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:9090",
   headers: {
     "Content-Type": "application/json",
   },
