@@ -38,7 +38,7 @@ const ProductDetailsPage = () => {
   };
 
   if (loading) return <CustomerLayout><div>Loading...</div></CustomerLayout>;
-  if (!product || !product.isActive) return <CustomerLayout><div>Product not found</div></CustomerLayout>;
+  if (!product) return <CustomerLayout><div>Product not found</div></CustomerLayout>;
 
   return (
     <CustomerLayout>
