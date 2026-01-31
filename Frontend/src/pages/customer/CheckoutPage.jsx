@@ -5,88 +5,78 @@ import axiosInstance from "../../api/axiosInstance";
 import { API } from "../../api/endpoints";
 
 const CheckoutPage = () => {
-  const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Success
+  const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddr, setSelectedAddr] = useState(null);
-  const [newAddr, setNewAddr] = useState({ addressLine: "", city: "", state: "", pincode: "", country: "India" });
+  const [newAddr, setNewAddr] = useState({
+    addressLine: "",
+    city: "",
+    state: "",
+    pincode: "",
+    country: "India"
+  });
   const [loading, setLoading] = useState(false);
   const [cartTotal, setCartTotal] = useState(0);
   const [orderInfo, setOrderInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check cart not empty
     axiosInstance.get(API.CART.GET).then(res => {
       if (!res.data.cartItems?.length) navigate("/cart");
       setCartTotal(res.data.totalAmount);
     });
-    axiosInstance.get(API.ADDRESS.GET_ALL)
-      .then(res => {
-        setAddresses(res.data);
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          setSelectedAddr(res.data[0].id);
-        }
-      })
-      .catch(() => {
-        setAddresses([]);
-      });
+
+    axiosInstance.get(API.ADDRESS.GET_ALL).then(res => {
+      setAddresses(res.data || []);
+      if (res.data?.length) setSelectedAddr(res.data[0].id);
+    });
   }, []);
 
-  const handleAddAddress = (e) => {
+  const handleAddAddress = async (e) => {
     e.preventDefault();
-    axiosInstance.post(API.ADDRESS.ADD, newAddr)
-      .then(res => {
-        const created = res.data;
-        const next = [...addresses, created];
-        setAddresses(next);
-        setSelectedAddr(created.id);
-        setNewAddr({ addressLine: "", city: "", state: "", pincode: "", country: "India" });
-      })
-      .catch(() => {
-        alert("Failed to save address");
-      });
+    try {
+      const res = await axiosInstance.post(API.ADDRESS.ADD, newAddr);
+      setAddresses(prev => [...prev, res.data]);
+      setSelectedAddr(res.data.id);
+      setNewAddr({ addressLine: "", city: "", state: "", pincode: "", country: "India" });
+    } catch {
+      alert("Failed to save address");
+    }
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddr) return alert("Select an address");
+    if (!selectedAddr) return alert("Please select address");
     setLoading(true);
     try {
       const res = await axiosInstance.post(API.ORDERS.PLACE, { addressId: selectedAddr });
-      setOrderInfo({
-        orderId: res.data.orderId,
-        total: res.data.totalAmount,
-        address: addresses.find(a => a.id === selectedAddr)
-      });
+      setOrderInfo(res.data);
       setStep(3);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        navigate("/login");
-        return;
-      }
+    } catch {
       alert("Order failed");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= SUCCESS ================= */
   if (step === 3 && orderInfo) {
     return (
       <CustomerLayout>
-        <div style={{ textAlign: "center", padding: "40px", background: "#fff", borderRadius: "12px", maxWidth: "600px", margin: "0 auto" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
-          <h1 style={{ color: "#16a34a" }}>Order Confirmed!</h1>
-          <p style={{ fontSize: "18px", color: "#334155" }}>Thank you for your purchase.</p>
-          
-          <div style={{ textAlign: "left", background: "#f8fafc", padding: "24px", borderRadius: "8px", margin: "24px 0" }}>
-            <p><strong>Order ID:</strong> {orderInfo.orderId}</p>
-            <p><strong>Total Amount:</strong> ${orderInfo.total.toFixed(2)}</p>
-            <p><strong>Delivery To:</strong></p>
-            <p style={{ color: "#64748b" }}>
-              {orderInfo.address.addressLine}, {orderInfo.address.city}, {orderInfo.address.state} - {orderInfo.address.pincode}
-            </p>
+        <div style={container}>
+          <div style={card}>
+            <div style={successIcon}>✔</div>
+            <h2 style={{ marginBottom: 8 }}>Order Placed Successfully</h2>
+            <p style={{ color: "#475569" }}>Thank you for shopping with us</p>
+
+            <div style={summaryBox}>
+              <p><b>Order ID:</b> {orderInfo.orderId}</p>
+              <p><b>Total Paid:</b> ₹{orderInfo.totalAmount}</p>
+            </div>
+
+            <button style={primaryBtn} onClick={() => navigate("/")}>
+              Continue Shopping
+            </button>
           </div>
-          
-          <button onClick={() => navigate("/")} style={btnStyle}>Continue Shopping</button>
         </div>
       </CustomerLayout>
     );
@@ -94,89 +84,213 @@ const CheckoutPage = () => {
 
   return (
     <CustomerLayout>
-      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "24px" }}>Checkout</h1>
-        
-        {/* STEPS */}
-        <div style={{ display: "flex", gap: "16px", marginBottom: "32px" }}>
-          <div style={{ ...stepStyle, opacity: step === 1 ? 1 : 0.5 }}>1. Address</div>
-          <div style={{ ...stepStyle, opacity: step === 2 ? 1 : 0.5 }}>2. Payment</div>
-        </div>
+      <div style={container}>
+        <div style={card}>
+          <h1 style={{ textAlign: "center" }}>Checkout</h1>
 
-        {step === 1 && (
-          <div style={cardStyle}>
-            <h2>Select Delivery Address</h2>
-            
-            {addresses.length > 0 ? (
-              <div style={{ display: "grid", gap: "12px", margin: "16px 0" }}>
-                {addresses.map(addr => (
-                  <label key={addr.id} style={{ ...addrCard, borderColor: selectedAddr === addr.id ? "#2563eb" : "#e2e8f0" }}>
-                    <input 
-                      type="radio" 
-                      name="address" 
-                      checked={selectedAddr === addr.id} 
-                      onChange={() => setSelectedAddr(addr.id)}
-                    />
-                    <div>
-                      <p style={{ margin: 0, fontWeight: "600" }}>{addr.addressLine}</p>
-                      <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>{addr.city}, {addr.state} - {addr.pincode}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: "#64748b" }}>No saved addresses.</p>
-            )}
-
-            <h3>Add New Address</h3>
-            <form onSubmit={handleAddAddress} style={{ display: "grid", gap: "12px" }}>
-              <input style={inputStyle} placeholder="Address Line" value={newAddr.addressLine} onChange={e => setNewAddr({...newAddr, addressLine: e.target.value})} required />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <input style={inputStyle} placeholder="City" value={newAddr.city} onChange={e => setNewAddr({...newAddr, city: e.target.value})} required />
-                <input style={inputStyle} placeholder="State" value={newAddr.state} onChange={e => setNewAddr({...newAddr, state: e.target.value})} required />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <input style={inputStyle} placeholder="Pincode" value={newAddr.pincode} onChange={e => setNewAddr({...newAddr, pincode: e.target.value})} required />
-                <input style={inputStyle} placeholder="Country" value={newAddr.country} disabled />
-              </div>
-              <button type="submit" style={{ ...btnStyle, background: "#334155" }}>Save & Use Address</button>
-            </form>
-
-            {selectedAddr && (
-              <button onClick={() => setStep(2)} style={{ ...btnStyle, marginTop: "24px", width: "100%" }}>Proceed to Payment</button>
-            )}
+          {/* STEPS */}
+          <div style={stepper}>
+            <span style={step === 1 ? activeStep : inactiveStep}>① Address</span>
+            <span style={step === 2 ? activeStep : inactiveStep}>② Payment</span>
           </div>
-        )}
 
-        {step === 2 && (
-          <div style={cardStyle}>
-            <h2>Payment Method</h2>
-            <div style={{ padding: "16px", border: "1px solid #2563eb", borderRadius: "8px", background: "#eff6ff", color: "#1e40af", fontWeight: "600" }}>
-              Credit / Debit Card (Simulated)
-            </div>
-            
-            <div style={{ marginTop: "24px", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
-               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>
-                <span>Total to Pay</span>
-                <span>${cartTotal.toFixed(2)}</span>
+          {/* ADDRESS */}
+          {step === 1 && (
+            <>
+              <h3>Select Delivery Address</h3>
+
+              {addresses.length === 0 && (
+                <p style={{ color: "#64748b" }}>No saved addresses</p>
+              )}
+
+              {addresses.map(addr => (
+                <div
+                  key={addr.id}
+                  onClick={() => setSelectedAddr(addr.id)}
+                  style={{
+                    ...addrCard,
+                    borderColor: selectedAddr === addr.id ? "#2563eb" : "#cbd5e1",
+                    background: selectedAddr === addr.id ? "#eff6ff" : "#fff"
+                  }}
+                >
+                  <input type="radio" checked={selectedAddr === addr.id} readOnly />
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#0f172a" }}>
+                      {addr.addressLine}
+                    </div>
+                    <div style={{ color: "#475569", fontSize: 14 }}>
+                      {addr.city}, {addr.state} - {addr.pincode}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <h4 style={{ marginTop: 20 }}>Add New Address</h4>
+              <form onSubmit={handleAddAddress}>
+                <input style={input} placeholder="Address Line"
+                  value={newAddr.addressLine}
+                  onChange={e => setNewAddr({ ...newAddr, addressLine: e.target.value })} required />
+
+                <div style={row}>
+                  <input style={input} placeholder="City"
+                    value={newAddr.city}
+                    onChange={e => setNewAddr({ ...newAddr, city: e.target.value })} required />
+                  <input style={input} placeholder="State"
+                    value={newAddr.state}
+                    onChange={e => setNewAddr({ ...newAddr, state: e.target.value })} required />
+                </div>
+
+                <div style={row}>
+                  <input style={input} placeholder="Pincode"
+                    value={newAddr.pincode}
+                    onChange={e => setNewAddr({ ...newAddr, pincode: e.target.value })} required />
+                  <input style={input} value="India" disabled />
+                </div>
+
+                <button style={secondaryBtn}>Save Address</button>
+              </form>
+
+              <button style={primaryBtn} onClick={() => setStep(2)}>
+                Proceed to Payment
+              </button>
+            </>
+          )}
+
+          {/* PAYMENT */}
+          {step === 2 && (
+            <>
+              <h3>Payment Method</h3>
+
+              <div style={paymentBox}>
+                💳 Credit / Debit Card (Demo)
               </div>
-              <button onClick={handlePlaceOrder} disabled={loading} style={{ ...btnStyle, width: "100%" }}>
+
+              <div style={totalRow}>
+                <span>Total Payable</span>
+                <b>₹{cartTotal}</b>
+              </div>
+
+              <button style={primaryBtn} disabled={loading} onClick={handlePlaceOrder}>
                 {loading ? "Processing..." : "Pay & Place Order"}
               </button>
-              <button onClick={() => setStep(1)} style={{ ...btnStyle, background: "#94a3b8", width: "100%", marginTop: "12px" }}>Back</button>
-            </div>
-          </div>
-        )}
 
+              <button style={backBtn} onClick={() => setStep(1)}>
+                Back
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </CustomerLayout>
   );
 };
 
-const cardStyle = { background: "#fff", padding: "24px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" };
-const stepStyle = { fontSize: "18px", fontWeight: "700", color: "#0f172a" };
-const addrCard = { display: "flex", gap: "12px", padding: "12px", border: "2px solid", borderRadius: "8px", cursor: "pointer" };
-const inputStyle = { padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", boxSizing: "border-box" };
-const btnStyle = { padding: "12px 24px", background: "#16a34a", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "600", cursor: "pointer", fontSize: "16px" };
+/* ================= STYLES ================= */
+
+const container = {
+  maxWidth: "520px",
+  margin: "40px auto",
+  padding: "0 16px"
+};
+
+const card = {
+  background: "#fff",
+  padding: 28,
+  borderRadius: 14,
+  boxShadow: "0 10px 25px rgba(0,0,0,0.12)"
+};
+
+const stepper = {
+  display: "flex",
+  justifyContent: "center",
+  gap: 24,
+  marginBottom: 20
+};
+
+const activeStep = { fontWeight: 700, color: "#2563eb" };
+const inactiveStep = { color: "#94a3b8" };
+
+const addrCard = {
+  display: "flex",
+  gap: 12,
+  padding: 14,
+  border: "2px solid",
+  borderRadius: 10,
+  cursor: "pointer",
+  marginBottom: 12
+};
+
+const input = {
+  width: "100%",
+  padding: 10,
+  marginBottom: 10,
+  borderRadius: 6,
+  border: "1px solid #cbd5e1"
+};
+
+const row = { display: "flex", gap: 10 };
+
+const primaryBtn = {
+  width: "100%",
+  padding: 12,
+  background: "#16a34a",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  fontWeight: 700,
+  cursor: "pointer",
+  marginTop: 12
+};
+
+const secondaryBtn = {
+  width: "100%",
+  padding: 10,
+  background: "#334155",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  marginBottom: 10
+};
+
+const backBtn = {
+  ...secondaryBtn,
+  background: "#94a3b8"
+};
+
+const paymentBox = {
+  padding: 16,
+  border: "1px solid #2563eb",
+  borderRadius: 8,
+  background: "#eff6ff",
+  color: "#1e3a8a",
+  marginBottom: 16
+};
+
+const totalRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: 18,
+  marginBottom: 16
+};
+
+const summaryBox = {
+  background: "#f8fafc",
+  padding: 16,
+  borderRadius: 8,
+  margin: "16px 0"
+};
+
+const successIcon = {
+  width: 56,
+  height: 56,
+  borderRadius: "50%",
+  background: "#16a34a",
+  color: "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 28,
+  margin: "0 auto 16px"
+};
 
 export default CheckoutPage;

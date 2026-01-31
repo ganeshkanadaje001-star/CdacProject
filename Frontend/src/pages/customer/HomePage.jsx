@@ -79,10 +79,8 @@ const HomePage = () => {
 
   return (
     <CustomerLayout>
-      {/* TOAST */}
       {toast && <div className="toast">{toast}</div>}
 
-      {/* CSS */}
       <style>{`
         .toast {
           position: fixed;
@@ -96,25 +94,30 @@ const HomePage = () => {
           z-index: 999;
         }
 
-        .horizontal-list {
-          display: flex;
-          gap: 20px;
-          overflow-x: auto;
-          padding-bottom: 10px;
+        /* 🔥 FULL WIDTH GRID */
+        .full-width {
+          width: 100%;
+          padding: 20px 40px;
+        }
+
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 28px;
         }
 
         .product-card {
-          min-width: 260px;
           background: #fff;
           border-radius: 16px;
           border: 1px solid #e5e7eb;
           cursor: pointer;
+          position: relative;
           transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
         .product-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+          transform: translateY(-8px);
+          box-shadow: 0 18px 40px rgba(0,0,0,0.15);
         }
 
         .badge {
@@ -195,15 +198,9 @@ const HomePage = () => {
           color: #fff;
         }
 
-        .cart.loading {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
         .disabled {
           background: #cbd5e1;
           color: #475569;
-          cursor: not-allowed;
         }
 
         .loading {
@@ -211,63 +208,57 @@ const HomePage = () => {
           padding: 60px;
           color: #64748b;
         }
-          .product-card {
-  background: #ffffff;
-  border-radius: 16px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.product-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.15);
-}
 
+        /* 📱 MOBILE */
+        @media (max-width: 768px) {
+          .full-width {
+            padding: 16px;
+          }
+        }
       `}</style>
 
       {loading ? (
         <div className="loading">Loading products…</div>
       ) : (
-        <div className="horizontal-list">
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="product-card"
-              onClick={() => navigate(`/product/${p.id}`)}
-            >
-              <span className={`badge ${p.stock > 0 ? "in" : "out"}`}>
-                {p.stock > 0 ? "In Stock" : "Out"}
-              </span>
+        <div className="full-width">
+          <div className="product-grid">
+            {filteredProducts.map((p) => (
+              <div
+                key={p.id}
+                className="product-card"
+                onClick={() => navigate(`/product/${p.id}`)}
+              >
+                <span className={`badge ${p.stock > 0 ? "in" : "out"}`}>
+                  {p.stock > 0 ? "In Stock" : "Out"}
+                </span>
 
-              <div className="img-box">
-                <img src={getImageUrl(p.imageUrl)} alt={p.name} />
-              </div>
+                <div className="img-box">
+                  <img src={getImageUrl(p.imageUrl)} alt={p.name} />
+                </div>
 
-              <div className="card-body">
-                <h3 className="title">{p.name}</h3>
-                <p className="desc">{p.description}</p>
-                <p className="price">${p.price?.toFixed(2)}</p>
+                <div className="card-body">
+                  <h3 className="title">{p.name}</h3>
+                  <p className="desc">{p.description}</p>
+                  <p className="price">${p.price?.toFixed(2)}</p>
 
-                {p.stock > 0 ? (
-                  <div className="btn-row">
-                    <button className="buy" onClick={(e) => handleBuyNow(e, p)}>
-                      Buy
+                  {p.stock > 0 ? (
+                    <div className="btn-row">
+                      <button className="buy" onClick={(e) => handleBuyNow(e, p)}>
+                        Buy
+                      </button>
+                      <button className="cart" onClick={(e) => handleAddToCart(e, p)}>
+                        Cart
+                      </button>
+                    </div>
+                  ) : (
+                    <button className="disabled" disabled>
+                      Out of Stock
                     </button>
-
-                    <button
-                      className={`cart ${addingId === p.id ? "loading" : ""}`}
-                      onClick={(e) => handleAddToCart(e, p)}
-                      disabled={addingId === p.id}
-                    >
-                      {addingId === p.id ? "Adding…" : "Cart"}
-                    </button>
-                  </div>
-                ) : (
-                  <button className="disabled" disabled>
-                    Out of Stock
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </CustomerLayout>
