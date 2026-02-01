@@ -14,6 +14,8 @@ import ProductDetailsPage from "../pages/customer/ProductDetailsPage";
 import CartPage from "../pages/customer/CartPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ProfilePage from "../pages/customer/ProfilePage";
+import TrackOrderPage from "../pages/customer/TrackOrderPage";
+
 
 const AppRoutes = () => {
   return (
@@ -29,6 +31,8 @@ const AppRoutes = () => {
       <Route path="/checkout" element={<ProtectedCustomer><CheckoutPage /></ProtectedCustomer>} />
       <Route path="/profile" element={<ProtectedCustomer><ProfilePage /></ProtectedCustomer>} />
       <Route path="/customer/dashboard" element={<Navigate to="/" replace />} />
+      <Route path="/track-order/:orderId" element={<TrackOrderPage />} />
+
 
       {/* ADMIN ROUTES */}
       <Route

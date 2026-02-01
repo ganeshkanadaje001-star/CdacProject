@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import CustomerLayout from "../../components/layout/CustomerLayout";
 import axiosInstance from "../../api/axiosInstance";
 import { API } from "../../api/endpoints";
@@ -6,11 +7,19 @@ import { decodeJwt } from "../../utils/jwt";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("info"); // info, orders, addresses
+  const [activeTab, setActiveTab] = useState("info");
   const [orders, setOrders] = useState([]);
   const [addresses, setAddresses] = useState([]);
-  const [newAddr, setNewAddr] = useState({ addressLine: "", city: "", state: "", pincode: "", country: "India" });
-  
+  const [newAddr, setNewAddr] = useState({
+    addressLine: "",
+    city: "",
+    state: "",
+    pincode: "",
+    country: "India",
+  });
+
+  const navigate = useNavigate();
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -21,188 +30,146 @@ const ProfilePage = () => {
   }, []);
 
   const fetchOrders = async () => {
-    try {
-      const res = await axiosInstance.get(API.ORDERS.MY_ORDERS);
-      setOrders(res.data);
-    } catch (err) {
-      console.error("Failed to fetch orders");
-    }
+    const res = await axiosInstance.get(API.ORDERS.MY_ORDERS);
+    setOrders(res.data);
   };
 
   const fetchAddresses = async () => {
-    try {
-      const res = await axiosInstance.get(API.ADDRESS.GET_ALL);
-      setAddresses(res.data);
-    } catch (err) {
-      console.error("Failed to fetch addresses");
-    }
+    const res = await axiosInstance.get(API.ADDRESS.GET_ALL);
+    setAddresses(res.data);
   };
 
-  const handleAddAddress = (e) => {
+  const handleAddAddress = async (e) => {
     e.preventDefault();
-    axiosInstance.post(API.ADDRESS.ADD, newAddr)
-      .then(() => {
-        setNewAddr({ addressLine: "", city: "", state: "", pincode: "", country: "India" });
-        fetchAddresses();
-      })
-      .catch(() => {
-        alert("Failed to save address");
-      });
+    await axiosInstance.post(API.ADDRESS.ADD, newAddr);
+    setNewAddr({
+      addressLine: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+    });
+    fetchAddresses();
   };
 
-  const handleDeleteAddress = (id) => {
-    axiosInstance.delete(API.ADDRESS.DELETE(id))
-      .then(() => fetchAddresses())
-      .catch(() => {
-        alert("Failed to remove address");
-      });
+  const handleDeleteAddress = async (id) => {
+    await axiosInstance.delete(API.ADDRESS.DELETE(id));
+    fetchAddresses();
   };
 
-  if (!user) return <CustomerLayout><div>Please login</div></CustomerLayout>;
+  if (!user) {
+    return (
+      <CustomerLayout>
+        <div style={{ color: "#000" }}>Please login</div>
+      </CustomerLayout>
+    );
+  }
 
   return (
     <CustomerLayout>
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "32px" }}>
+      <div style={pageGrid}>
         {/* SIDEBAR */}
-        <div style={{ background: "#fff", padding: "16px", borderRadius: "12px", height: "fit-content" }}>
-          <div style={{ marginBottom: "24px", textAlign: "center" }}>
-            <div style={{ width: "64px", height: "64px", background: "#2563eb", borderRadius: "99px", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", margin: "0 auto 12px" }}>
-              {user.sub?.charAt(0).toUpperCase()}
-            </div>
-            <h3 style={{ margin: 0 }}>{user.sub}</h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>{user.user_role}</p>
+        <div style={sidebar}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={avatar}>{user.sub?.charAt(0).toUpperCase()}</div>
+            <h3 style={blackText}>{user.sub}</h3>
+            <p style={blackText}>{user.user_role}</p>
           </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button onClick={() => setActiveTab("info")} style={activeTab === "info" ? activeBtn : menuBtn}>Personal Info</button>
-            <button onClick={() => setActiveTab("orders")} style={activeTab === "orders" ? activeBtn : menuBtn}>Order History</button>
-            <button onClick={() => setActiveTab("addresses")} style={activeTab === "addresses" ? activeBtn : menuBtn}>Addresses</button>
-          </div>
+
+          <button onClick={() => setActiveTab("info")} style={activeTab === "info" ? activeBtn : menuBtn}>
+            Personal Info
+          </button>
+          <button onClick={() => setActiveTab("orders")} style={activeTab === "orders" ? activeBtn : menuBtn}>
+            Order History
+          </button>
+          <button onClick={() => setActiveTab("addresses")} style={activeTab === "addresses" ? activeBtn : menuBtn}>
+            Addresses
+          </button>
         </div>
 
         {/* CONTENT */}
-        <div style={{ background: "#fff", padding: "32px", borderRadius: "12px" }}>
+        <div style={content}>
           {activeTab === "info" && (
-            <div>
-              <h2>Personal Information</h2>
-              <div style={{ display: "grid", gap: "16px", maxWidth: "400px" }}>
-                <div>
-                  <label style={labelStyle}>Email</label>
-                  <input style={inputStyle} value={user.sub} disabled />
-                </div>
-                <div>
-                  <label style={labelStyle}>Role</label>
-                  <input style={inputStyle} value={user.user_role} disabled />
-                </div>
-                {/* Add more fields if available in user details endpoint */}
-              </div>
-            </div>
+            <>
+              <h2 style={blackText}>Personal Information</h2>
+              <input style={input} value={user.sub} disabled />
+              <input style={input} value={user.user_role} disabled />
+            </>
           )}
 
           {activeTab === "orders" && (
-            <div>
-              <h2>Order History</h2>
-              {orders.length === 0 ? (
-                <p style={{ color: "#64748b" }}>No orders found.</p>
-              ) : (
-                <div style={{ display: "grid", gap: "16px" }}>
-                  {orders.map(order => (
-                    <div key={order.orderId} style={orderCard}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                        <div>
-                          <span style={{ fontWeight: "700" }}>#{order.orderId}</span>
-                          <span style={{ marginLeft: "12px", fontSize: "13px", color: "#64748b" }}>
-                            {new Date(order.orderDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <span style={{ 
-                          padding: "2px 8px", borderRadius: "99px", fontSize: "12px", fontWeight: "600",
-                          background: order.status === "DELIVERED" ? "#dcfce7" : "#fef3c7",
-                          color: order.status === "DELIVERED" ? "#166534" : "#92400e"
-                        }}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
-                        {order.items.map((item, idx) => (
-                          <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "4px" }}>
-                            <span>{item.quantity} x {item.productName}</span>
-                            <span>${item.subTotal.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "12px", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontWeight: "700" }}>
-                        <span>Total</span>
-                        <span>${order.totalAmount.toFixed(2)}</span>
-                      </div>
+            <>
+              <h2 style={blackText}>Order History</h2>
+
+              <div style={orderGrid}>
+                {orders.map((order) => (
+                  <div key={order.orderId} style={orderCard}>
+                    <div style={orderHeader}>
+                      <strong style={blackText}>Order #{order.orderId}</strong>
+                      <span style={statusBadge}>{order.status}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                    {order.items.map((item, i) => (
+                      <div key={i} style={itemRow}>
+                        <span style={blackText}>
+                          {item.quantity} × {item.productName}
+                        </span>
+                        <span style={blackText}>₹{item.subTotal}</span>
+                      </div>
+                    ))}
+
+                    <div style={totalRow}>
+                      <span style={blackText}>Total</span>
+                      <span style={blackText}>₹{order.totalAmount}</span>
+                    </div>
+
+                    <button
+                      style={trackBtn}
+                      onMouseOver={(e) => (e.target.style.background = "#1e40af")}
+                      onMouseOut={(e) => (e.target.style.background = "#2563eb")}
+                      onClick={() => navigate(`/track-order/${order.orderId}`)}
+                    >
+                      Track Order
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {activeTab === "addresses" && (
-            <div>
-              <h2>Saved Addresses</h2>
-              {addresses.length === 0 ? (
-                <p style={{ color: "#64748b" }}>No saved addresses yet.</p>
-              ) : (
-                <div style={{ display: "grid", gap: "12px", margin: "16px 0" }}>
-                  {addresses.map(addr => (
-                    <div key={addr.id} style={addressCard}>
-                      <div>
-                        <p style={addressLine}>{addr.addressLine}</p>
-                        <p style={addressMeta}>{addr.city}, {addr.state} - {addr.pincode}</p>
-                      </div>
-                      <button onClick={() => handleDeleteAddress(addr.id)} style={deleteBtn}>Remove</button>
-                    </div>
-                  ))}
+            <>
+              <h2 style={blackText}>Saved Addresses</h2>
+
+              {addresses.map((addr) => (
+                <div key={addr.id} style={addressCard}>
+                  <div>
+                    <p style={blackText}><b>{addr.addressLine}</b></p>
+                    <p style={blackText}>
+                      {addr.city}, {addr.state} - {addr.pincode}
+                    </p>
+                  </div>
+                  <button style={removeBtn} onClick={() => handleDeleteAddress(addr.id)}>
+                    Remove
+                  </button>
                 </div>
-              )}
-              <h3>Add New Address</h3>
-              <form onSubmit={handleAddAddress} style={{ display: "grid", gap: "12px", maxWidth: "400px" }}>
-                <input
-                  style={inputStyle}
-                  placeholder="Address Line"
-                  value={newAddr.addressLine}
-                  onChange={e => setNewAddr({ ...newAddr, addressLine: e.target.value })}
-                  required
-                />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <input
-                    style={inputStyle}
-                    placeholder="City"
-                    value={newAddr.city}
-                    onChange={e => setNewAddr({ ...newAddr, city: e.target.value })}
-                    required
-                  />
-                  <input
-                    style={inputStyle}
-                    placeholder="State"
-                    value={newAddr.state}
-                    onChange={e => setNewAddr({ ...newAddr, state: e.target.value })}
-                    required
-                  />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <input
-                    style={inputStyle}
-                    placeholder="Pincode"
-                    value={newAddr.pincode}
-                    onChange={e => setNewAddr({ ...newAddr, pincode: e.target.value })}
-                    required
-                  />
-                  <input
-                    style={inputStyle}
-                    placeholder="Country"
-                    value={newAddr.country}
-                    disabled
-                  />
-                </div>
-                <button type="submit" style={addressBtn}>Save Address</button>
+              ))}
+
+              <h3 style={blackText}>Add New Address</h3>
+
+              <form onSubmit={handleAddAddress}>
+                <input style={input} placeholder="Address Line" value={newAddr.addressLine}
+                  onChange={(e) => setNewAddr({ ...newAddr, addressLine: e.target.value })} required />
+                <input style={input} placeholder="City" value={newAddr.city}
+                  onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} required />
+                <input style={input} placeholder="State" value={newAddr.state}
+                  onChange={(e) => setNewAddr({ ...newAddr, state: e.target.value })} required />
+                <input style={input} placeholder="Pincode" value={newAddr.pincode}
+                  onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value })} required />
+
+                <button type="submit" style={primaryBtn}>Save Address</button>
               </form>
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -210,15 +177,97 @@ const ProfilePage = () => {
   );
 };
 
-const menuBtn = { padding: "10px", textAlign: "left", background: "none", border: "none", borderRadius: "6px", cursor: "pointer", color: "#64748b", fontWeight: "500" };
-const activeBtn = { ...menuBtn, background: "#eff6ff", color: "#2563eb", fontWeight: "700" };
-const labelStyle = { display: "block", fontSize: "13px", color: "#64748b", marginBottom: "4px" };
-const inputStyle = { width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc" };
-const orderCard = { border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px" };
-const addressCard = { border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" };
-const addressLine = { margin: 0, fontWeight: "600" };
-const addressMeta = { margin: 0, fontSize: "14px", color: "#64748b" };
-const deleteBtn = { padding: "6px 10px", borderRadius: "6px", border: "none", background: "#fee2e2", color: "#b91c1c", cursor: "pointer", fontSize: "12px" };
-const addressBtn = { marginTop: "8px", padding: "10px 16px", borderRadius: "8px", border: "none", background: "#2563eb", color: "#fff", fontWeight: "600", cursor: "pointer", fontSize: "14px" };
+/* ================= STYLES ================= */
+
+const blackText = { color: "#000" };
+
+const pageGrid = { display: "grid", gridTemplateColumns: "240px 1fr", gap: 32 };
+const sidebar = { background: "#fff", padding: 16, borderRadius: 12 };
+const content = { background: "#fff", padding: 24, borderRadius: 12 };
+
+const avatar = {
+  width: 64,
+  height: 64,
+  background: "#2563eb",
+  borderRadius: "50%",
+  color: "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const menuBtn = { padding: 10, border: "none", background: "none", cursor: "pointer", color: "#000", textAlign: "left" };
+const activeBtn = { ...menuBtn, background: "#e5e7eb", fontWeight: 700 };
+
+const input = {
+  width: "100%",
+  padding: 10,
+  marginBottom: 12,
+  border: "1px solid #000",
+  borderRadius: 6,
+  color: "#000",
+  background: "#fff",
+};
+
+const orderGrid = { display: "flex", flexWrap: "wrap", gap: 20 };
+
+const orderCard = {
+  flex: "1 1 260px",
+  border: "1px solid #000",
+  padding: 16,
+  borderRadius: 10,
+  background: "#fff",
+};
+
+const orderHeader = { display: "flex", justifyContent: "space-between", marginBottom: 6 };
+const itemRow = { display: "flex", justifyContent: "space-between" };
+const totalRow = { display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: 6 };
+
+const statusBadge = {
+  background: "#e5e7eb",
+  padding: "2px 8px",
+  borderRadius: 12,
+  color: "#000",
+};
+
+const trackBtn = {
+  marginTop: 12,
+  padding: "10px",
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+const addressCard = {
+  border: "1px solid #000",
+  padding: 16,
+  borderRadius: 8,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 12,
+};
+
+const removeBtn = {
+  background: "#dc2626",
+  color: "#fff",
+  border: "none",
+  padding: "8px 14px",
+  cursor: "pointer",
+  borderRadius: 6,
+};
+
+const primaryBtn = {
+  background: "#000",
+  color: "#fff",
+  padding: "10px 16px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+  marginTop: 8,
+};
 
 export default ProfilePage;

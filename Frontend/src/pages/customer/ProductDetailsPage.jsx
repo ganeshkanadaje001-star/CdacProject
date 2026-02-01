@@ -28,7 +28,10 @@ const ProductDetailsPage = () => {
 
   const handleAddToCart = async () => {
     try {
-      await axiosInstance.post(API.CART.ADD, { productId: product.id, quantity: qty });
+      await axiosInstance.post(API.CART.ADD, {
+        productId: product.id,
+        quantity: qty,
+      });
       window.dispatchEvent(new Event("cart:updated"));
       alert("Added to cart");
     } catch (err) {
@@ -37,43 +40,138 @@ const ProductDetailsPage = () => {
     }
   };
 
-  if (loading) return <CustomerLayout><div>Loading...</div></CustomerLayout>;
-  if (!product) return <CustomerLayout><div>Product not found</div></CustomerLayout>;
+  if (loading)
+    return (
+      <CustomerLayout>
+        <div style={{ color: "#000" }}>Loading...</div>
+      </CustomerLayout>
+    );
+
+  if (!product)
+    return (
+      <CustomerLayout>
+        <div style={{ color: "#000" }}>Product not found</div>
+      </CustomerLayout>
+    );
 
   return (
     <CustomerLayout>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", background: "#fff", padding: "32px", borderRadius: "16px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "40px",
+          background: "#fff",
+          padding: "32px",
+          borderRadius: "16px",
+          color: "#000",
+        }}
+      >
         {/* IMAGE */}
-        <div style={{ height: "400px", background: "#f8fafc", borderRadius: "12px", overflow: "hidden" }}>
-          <img src={getImageUrl(product.imageUrl)} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        <div
+          style={{
+            height: "400px",
+            background: "#f8fafc",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={getImageUrl(product.imageUrl)}
+            alt={product.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
         </div>
 
         {/* DETAILS */}
         <div>
-          <h1 style={{ fontSize: "32px", color: "#0f172a", marginBottom: "16px" }}>{product.name}</h1>
-          <p style={{ fontSize: "24px", color: "#2563eb", fontWeight: "700", marginBottom: "24px" }}>${product.price.toFixed(2)}</p>
-          
+          <h1
+            style={{
+              fontSize: "32px",
+              color: "#000",
+              marginBottom: "16px",
+            }}
+          >
+            {product.name}
+          </h1>
+
+          <p
+            style={{
+              fontSize: "24px",
+              color: "#14532d",
+              fontWeight: "700",
+              marginBottom: "24px",
+            }}
+          >
+            ₹{product.price.toFixed(2)}
+          </p>
+
           <div style={{ marginBottom: "24px" }}>
-            <span style={{ 
-              background: product.stock > 0 ? "#dcfce7" : "#fee2e2", 
-              color: product.stock > 0 ? "#166534" : "#b91c1c",
-              padding: "6px 12px", borderRadius: "99px", fontWeight: "600", fontSize: "14px"
-            }}>
-              {product.stock > 0 ? `${product.stock} In Stock` : "Out of Stock"}
+            <span
+              style={{
+                background: product.stock > 0 ? "#dcfce7" : "#fee2e2",
+                color: product.stock > 0 ? "#14532d" : "#7f1d1d",
+                padding: "6px 12px",
+                borderRadius: "99px",
+                fontWeight: "600",
+                fontSize: "14px",
+              }}
+            >
+              {product.stock > 0
+                ? `${product.stock} In Stock`
+                : "Out of Stock"}
             </span>
           </div>
 
-          <p style={{ color: "#475569", lineHeight: "1.6", marginBottom: "32px" }}>
+          <p
+            style={{
+              color: "#111827",
+              lineHeight: "1.6",
+              marginBottom: "32px",
+            }}
+          >
             {product.description}
           </p>
 
           {product.stock > 0 && (
             <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: "8px" }}>
-                <button onClick={() => setQty(Math.max(1, qty - 1))} style={qtyBtn}>-</button>
-                <span style={{ padding: "0 16px", fontWeight: "600" }}>{qty}</span>
-                <button onClick={() => setQty(Math.min(product.stock, qty + 1))} style={qtyBtn}>+</button>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                }}
+              >
+                <button
+                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  style={qtyBtn}
+                >
+                  −
+                </button>
+
+                <span
+                  style={{
+                    padding: "0 16px",
+                    fontWeight: "600",
+                    color: "#000",
+                  }}
+                >
+                  {qty}
+                </span>
+
+                <button
+                  onClick={() => setQty(Math.min(product.stock, qty + 1))}
+                  style={qtyBtn}
+                >
+                  +
+                </button>
               </div>
+
               <button onClick={handleAddToCart} style={addBtn}>
                 Add to Cart
               </button>
@@ -85,7 +183,24 @@ const ProductDetailsPage = () => {
   );
 };
 
-const qtyBtn = { padding: "10px 16px", background: "none", border: "none", cursor: "pointer", fontSize: "18px", color: "#334155" };
-const addBtn = { padding: "12px 32px", background: "#16a34a", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "16px", cursor: "pointer" };
+const qtyBtn = {
+  padding: "10px 16px",
+  background: "#fff",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "18px",
+  color: "#000",
+};
+
+const addBtn = {
+  padding: "12px 32px",
+  background: "#16a34a",
+  color: "#fff",
+  border: "none",
+  borderRadius: "8px",
+  fontWeight: "700",
+  fontSize: "16px",
+  cursor: "pointer",
+};
 
 export default ProductDetailsPage;
