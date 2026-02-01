@@ -40,17 +40,7 @@ const OrdersPage = () => {
   };
 
   const createTestOrder = async () => {
-    try {
-      setLoading(true);
-      // Try to create an order for Product ID 1 with Quantity 1
-      await axiosInstance.post(API.ORDERS.PLACE, { productId: 1, quantity: 1 });
-      alert("Test order created! Refreshing list...");
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create test order. Ensure Product ID 1 exists.");
-      setLoading(false);
-    }
+    alert("Use customer checkout to create test orders. Admin can only view all orders here.");
   };
 
   if (loading) return <AdminLayout><div className="p-4">Loading orders...</div></AdminLayout>;
@@ -60,10 +50,7 @@ const OrdersPage = () => {
     <AdminLayout>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>Orders</h1>
-        <button 
-          onClick={createTestOrder}
-          style={{ background: "#2563eb", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "pointer" }}
-        >
+        <button onClick={createTestOrder} style={{ background: "#94a3b8", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "not-allowed" }}>
           + Create Test Order
         </button>
       </div>

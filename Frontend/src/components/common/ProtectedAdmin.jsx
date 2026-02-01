@@ -9,7 +9,7 @@ const ProtectedAdmin = ({ children }) => {
   }
 
   const decoded = decodeJwt(token);
-  const role = decoded?.user_role;
+  const role = decoded?.user_role || decoded?.role;
   const exp = decoded?.exp;
 
   if (exp && exp * 1000 < Date.now()) {
