@@ -39,5 +39,4 @@ public class UserServiceImpl implements UserService {
 		 user.setPassword(passwordEncoder.encode(user.getPassword())));
 		return new ExceptioResponse("Password encrypted", "Success");
 	}
-	
 }

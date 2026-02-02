@@ -47,6 +47,7 @@ export const API = {
     PLACE: `${BASE_URL}/order/addOrder`,
     MY_ORDERS: `${BASE_URL}/order/getMyOrder`,
     GET_ALL: `${BASE_URL}/order/all`,
+    UPDATE_STATUS: (id, status) => `${BASE_URL}/order/${id}/status?status=${status}`,
   },
   MEDIA: {
     UPLOAD: `${BASE_URL}/media/upload`,

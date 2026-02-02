@@ -74,7 +74,8 @@ public class SecurityConfiguration {
                  .pathMatchers(HttpMethod.POST, "/addresses/**").hasRole("CUSTOMER")
                  .pathMatchers(HttpMethod.DELETE, "/addresses/**").hasRole("CUSTOMER")
                  .pathMatchers(HttpMethod.PUT, "/addresses/**").hasRole("CUSTOMER")
-
+                 .pathMatchers(HttpMethod.PUT, "/admin/orders/*/status")
+                 .hasRole("ADMIN")
                  // Both can view, but Service layer will filter the results
                  .pathMatchers(HttpMethod.GET, "/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
                     .anyExchange().authenticated()

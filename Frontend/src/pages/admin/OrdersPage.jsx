@@ -7,6 +7,8 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewOrder, setViewOrder] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -39,8 +41,60 @@ const OrdersPage = () => {
     }
   };
 
+  const downloadOrdersExcel = () => {
+    const rows = orders.map((o) => {
+      const items = (o.items || []).map((it) => it.productName).join(", ");
+      const quantities = (o.items || []).map((it) => it.quantity).join(", ");
+      const prices = (o.items || []).map((it) => (typeof it.priceAtPurchase === "number" ? it.priceAtPurchase.toFixed(2) : "")).join(", ");
+      const date = o.orderDate ? new Date(o.orderDate).toLocaleString() : "";
+      const status = o.status || "";
+      const total = typeof o.totalAmount === "number" ? o.totalAmount.toFixed(2) : "";
+      return [o.orderId || "", date, status, total, items, quantities, prices];
+    });
+    const header = ["Order ID", "Date", "Status", "Total", "Items", "Quantities", "Item Prices"];
+    let html = "<table><thead><tr>";
+    header.forEach((h) => { html += `<th>${String(h).replace(/</g, "&lt;")}</th>`; });
+    html += "</tr></thead><tbody>";
+    rows.forEach((r) => {
+      html += "<tr>";
+      r.forEach((c) => { html += `<td>${String(c ?? "").replace(/</g, "&lt;")}</td>`; });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "all-orders.xls";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const createTestOrder = async () => {
     alert("Use customer checkout to create test orders. Admin can only view all orders here.");
+  };
+
+  const openView = (order) => {
+    setViewOrder(order);
+    setUpdateStatus(order.status || "PENDING");
+  };
+
+  const closeView = () => {
+    setViewOrder(null);
+    setUpdateStatus("");
+  };
+
+  const saveStatus = async () => {
+    if (!viewOrder || !updateStatus) return;
+    try {
+      await axiosInstance.put(API.ORDERS.UPDATE_STATUS(viewOrder.orderId, updateStatus));
+      closeView();
+      await fetchOrders();
+    } catch (err) {
+      alert("Failed to update status");
+    }
   };
 
   if (loading) return <AdminLayout><div className="p-4">Loading orders...</div></AdminLayout>;
@@ -50,9 +104,14 @@ const OrdersPage = () => {
     <AdminLayout>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>Orders</h1>
-        <button onClick={createTestOrder} style={{ background: "#94a3b8", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "not-allowed" }}>
-          + Create Test Order
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={downloadOrdersExcel} style={{ background: "#16a34a", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+            Download Excel
+          </button>
+          <button onClick={createTestOrder} style={{ background: "#94a3b8", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "not-allowed" }}>
+            + Create Test Order
+          </button>
+        </div>
       </div>
 
       <div style={{ background: "#ffffff", borderRadius: "8px", overflow: "hidden", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
@@ -64,6 +123,7 @@ const OrdersPage = () => {
               <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", color: "#64748b", fontSize: "14px" }}>Status</th>
               <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", color: "#64748b", fontSize: "14px" }}>Total Amount</th>
               <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", color: "#64748b", fontSize: "14px" }}>Items</th>
+              <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", color: "#64748b", fontSize: "14px" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +152,11 @@ const OrdersPage = () => {
                     ))}
                   </ul>
                 </td>
+                <td style={{ padding: "12px" }}>
+                  <button onClick={() => openView(order)} style={{ background: "#2563eb", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "pointer" }}>
+                    View
+                  </button>
+                </td>
               </tr>
             ))}
             {orders.length === 0 && (
@@ -104,6 +169,39 @@ const OrdersPage = () => {
           </tbody>
         </table>
       </div>
+      {viewOrder && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div style={{ background: "#fff", padding: "20px", borderRadius: "10px", width: "600px", maxWidth: "95vw" }}>
+            <h2 style={{ marginTop: 0, color: "#0f172a" }}>Order #{viewOrder.orderId}</h2>
+            <p style={{ color: "#334155" }}>Date: {viewOrder.orderDate ? new Date(viewOrder.orderDate).toLocaleString() : "-"}</p>
+            <p style={{ color: "#334155" }}>Total: ₹{viewOrder.totalAmount}</p>
+            <div style={{ marginTop: "12px" }}>
+              <h3 style={{ color: "#0f172a" }}>Items</h3>
+              <ul style={{ listStyle: "disc", paddingLeft: "20px" }}>
+                {(viewOrder.items || []).map((it, idx) => (
+                  <li key={idx} style={{ color: "#111827" }}>
+                    {it.productName} × {it.quantity} — ₹{it.priceAtPurchase} each, Subtotal ₹{it.subTotal}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ marginTop: "16px", display: "flex", gap: "10px", alignItems: "center" }}>
+              <label style={{ color: "#0f172a", fontWeight: 600 }}>Change Status</label>
+              <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #e5e7eb" }}>
+                {["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"].map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button onClick={saveStatus} style={{ background: "#16a34a", color: "#fff", padding: "8px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                Update
+              </button>
+              <button onClick={closeView} style={{ background: "#ef4444", color: "#fff", padding: "8px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

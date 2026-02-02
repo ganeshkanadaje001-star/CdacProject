@@ -39,6 +39,41 @@ const ProfilePage = () => {
     setAddresses(res.data);
   };
 
+  const downloadOrdersExcel = () => {
+    const rows = orders.map((o) => {
+      const items = (o.items || []).map((it) => it.productName).join(", ");
+      const quantities = (o.items || []).map((it) => it.quantity).join(", ");
+      const prices = (o.items || []).map((it) => it.priceAtPurchase?.toFixed(2)).join(", ");
+      const date = o.orderDate ? new Date(o.orderDate).toLocaleString() : "";
+      const status = o.status || "";
+      const total = typeof o.totalAmount === "number" ? o.totalAmount.toFixed(2) : "";
+      return [o.orderId || "", date, status, total, items, quantities, prices];
+    });
+    const header = ["Order ID", "Date", "Status", "Total", "Items", "Quantities", "Item Prices"];
+    let html = "<table><thead><tr>";
+    header.forEach((h) => {
+      html += `<th>${String(h).replace(/</g, "&lt;")}</th>`;
+    });
+    html += "</tr></thead><tbody>";
+    rows.forEach((r) => {
+      html += "<tr>";
+      r.forEach((c) => {
+        html += `<td>${String(c ?? "").replace(/</g, "&lt;")}</td>`;
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `order-history-${user?.sub || "user"}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleAddAddress = async (e) => {
     e.preventDefault();
     await axiosInstance.post(API.ADDRESS.ADD, newAddr);
@@ -99,7 +134,10 @@ const ProfilePage = () => {
 
           {activeTab === "orders" && (
             <>
-              <h2 style={blackText}>Order History</h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <h2 style={blackText}>Order History</h2>
+                <button style={exportBtn} onClick={downloadOrdersExcel}>Download Excel</button>
+              </div>
 
               <div style={orderGrid}>
                 {orders.map((order) => (
@@ -268,6 +306,16 @@ const primaryBtn = {
   borderRadius: 6,
   cursor: "pointer",
   marginTop: 8,
+};
+
+const exportBtn = {
+  background: "#16a34a",
+  color: "#fff",
+  padding: "10px 16px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+  fontWeight: 600,
 };
 
 export default ProfilePage;

@@ -187,6 +187,21 @@ public class OrderServiceImpl implements OrderService {
 
 	    orderRepo.save(order);
 	}
+	 @Override
+	    public OrderResDto updateOrderStatus(Long orderId, OrderStatus status) {
 
+	        // 1. Find order
+	        Order order = orderRepo.findById(orderId)
+	                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+	        // 2. Update status
+	        order.setStatus(status);
+
+	        // 3. Save updated order
+	        Order updatedOrder = orderRepo.save(order);
+
+	        // 4. Return response DTO
+	        return model.map(updatedOrder, OrderResDto.class);
+	    }
 
 }

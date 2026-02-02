@@ -4,10 +4,12 @@ import java.util.List;
 
 import com.freshbasket.dto.OrderReqDto;
 import com.freshbasket.dto.OrderResDto;
+import com.freshbasket.entity.OrderStatus;
 
 public interface OrderService {
 OrderResDto addOrder(OrderReqDto orderReqDto);
 List<OrderResDto> getMyOrder();
 List<OrderResDto> getAllOrders();
 void markOrderPaid(Long orderId,String paymentId);
+OrderResDto updateOrderStatus(Long orderId, OrderStatus status);
 }
