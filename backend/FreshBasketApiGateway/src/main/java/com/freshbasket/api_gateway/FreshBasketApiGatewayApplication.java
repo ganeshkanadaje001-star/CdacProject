@@ -8,10 +8,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 	        org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class
 	    }
 	)
-public class HealthcareApiGatewayApplication {
+public class FreshBasketApiGatewayApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(HealthcareApiGatewayApplication.class, args);
+		SpringApplication.run(FreshBasketApiGatewayApplication.class, args);
 	}
 
 }

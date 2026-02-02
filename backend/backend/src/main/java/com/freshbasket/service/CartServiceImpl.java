@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.freshbasket.custom_exception.ResourseNotFoundException;
 import com.freshbasket.dto.CartRequestDto;
 import com.freshbasket.dto.CartResponseDto;
+import com.freshbasket.dto.CartItemResponseDto;
 import com.freshbasket.entity.Cart;
 import com.freshbasket.entity.CartItem;
 import com.freshbasket.entity.Products;
@@ -63,13 +64,7 @@ public class CartServiceImpl implements CartService {
 		cart.setTotalAmount(total);
 
 		Cart savedCart = cartRepo.save(cart);
-
-		CartResponseDto cartResponseDto = model.map(savedCart, CartResponseDto.class);
-		for (int i = 0; i < savedCart.getCartItems().size(); i++) {
-			cartResponseDto.getCartItems().get(i).setProductId(savedCart.getCartItems().get(i).getProduct().getId());
-			cartResponseDto.getCartItems().get(i).setCartItemId(savedCart.getCartItems().get(i).getId());
-		}
-		return cartResponseDto;
+		return toResponse(savedCart);
 	}
 
 	@Override
@@ -87,15 +82,7 @@ public class CartServiceImpl implements CartService {
 		recalculateCartTotal(cart);
 
 		Cart savedCart = cartRepo.save(cart);
-		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
-
-		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
-			if (ci.getId().equals(dto.getCartItemId())) {
-				dto.setProductId(ci.getProduct().getId());
-			}
-		}));
-
-		return response;
+		return toResponse(savedCart);
 	}
 
 	@Override
@@ -128,15 +115,7 @@ public class CartServiceImpl implements CartService {
 		recalculateCartTotal(cart);
 
 		Cart savedCart = cartRepo.save(cart);
-		CartResponseDto response = model.map(savedCart, CartResponseDto.class);
-
-		savedCart.getCartItems().forEach(ci -> response.getCartItems().forEach(dtoItem -> {
-			if (ci.getId().equals(dtoItem.getCartItemId())) {
-				dtoItem.setProductId(ci.getProduct().getId());
-			}
-		}));
-
-		return response;
+		return toResponse(savedCart);
 	}
 
 	@Override
@@ -146,16 +125,7 @@ public class CartServiceImpl implements CartService {
 
 		Cart cart = cartRepo.findByUserId(userId).orElseThrow(() -> new ResourseNotFoundException("Cart not found"));
 
-		CartResponseDto response = model.map(cart, CartResponseDto.class);
-
-		// set productId manually (same logic you already used)
-		cart.getCartItems().forEach(ci -> response.getCartItems().forEach(dto -> {
-			if (ci.getId().equals(dto.getCartItemId())) {
-				dto.setProductId(ci.getProduct().getId());
-			}
-		}));
-
-		return response;
+		return toResponse(cart);
 	}
 
 	private void recalculateCartTotal(Cart cart) {
@@ -164,4 +134,20 @@ public class CartServiceImpl implements CartService {
 		cart.setTotalAmount(total);
 	}
 
+	private CartResponseDto toResponse(Cart cart) {
+		CartResponseDto response = new CartResponseDto();
+		response.setId(cart.getId());
+		response.setTotalAmount(cart.getTotalAmount());
+		java.util.List<CartItemResponseDto> items = new java.util.ArrayList<>();
+		for (CartItem ci : cart.getCartItems()) {
+			CartItemResponseDto dto = new CartItemResponseDto();
+			dto.setCartItemId(ci.getId());
+			dto.setQuantity(ci.getQuantity());
+			dto.setTotalPrice(ci.getTotalPrice());
+			dto.setProductId(ci.getProduct().getId());
+			items.add(dto);
+		}
+		response.setCartItems(items);
+		return response;
+	}
 }
