@@ -7,3 +7,10 @@ frontend/node_modules/
 # Environment secrets
 .env
 .vscode/
+# .NET / Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache

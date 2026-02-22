@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { API } from "../../api/endpoints";
 import { decodeJwt } from "../../utils/jwt";
+import axios from "axios";
 
 
 // ✅ IMPORT BACKGROUND IMAGE
@@ -54,6 +55,23 @@ const CustomerLayout = ({ children }) => {
   };
 
   const handleLogout = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = decodeJwt(token);
+      const username = decoded?.sub || "Unknown";
+      const role = decoded?.user_role || decoded?.role || "Unknown";
+      const url = (import.meta.env.VITE_DOTNET_LOGGER_LOGIN_URL || "").trim();
+      if (url) {
+        axios
+          .post(url, {
+            level: "INFO",
+            source: "LOGOUT",
+            message: `User ${username} logged out (${role})`,
+            data: new Date().toISOString(),
+          })
+          .catch(() => {});
+      }
+    }
     localStorage.removeItem("token");
     navigate("/login");
   };

@@ -1,10 +1,29 @@
 import { Link, useNavigate } from "react-router-dom";
 import { logout } from "../../api/authService";
+import { decodeJwt } from "../../utils/jwt";
+import axios from "axios";
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = decodeJwt(token);
+      const username = decoded?.sub || "Unknown";
+      const role = decoded?.user_role || decoded?.role || "Unknown";
+      const url = (import.meta.env.VITE_DOTNET_LOGGER_LOGIN_URL || "").trim();
+      if (url) {
+        axios
+          .post(url, {
+            level: "INFO",
+            source: "LOGOUT",
+            message: `User ${username} logged out (${role})`,
+            data: new Date().toISOString(),
+          })
+          .catch(() => {});
+      }
+    }
     logout();
     navigate("/login");
   };

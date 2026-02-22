@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, encryptPasswords } from "../../api/authService";
 import { decodeJwt } from "../../utils/jwt";
+import axios from "axios";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,18 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const navigate = useNavigate();
+  const logLogin = (username) => {
+    const url = (import.meta.env.VITE_DOTNET_LOGGER_LOGIN_URL || "").trim();
+    if (!url) return;
+    axios
+      .post(url, {
+        level: "INFO",
+        source: "LOGIN",
+        message: `User ${username} logged in`,
+        data: new Date().toISOString(),
+      })
+      .catch(() => {});
+  };
 
   const handleLogin = async () => {
     setError("");
@@ -27,6 +40,8 @@ function LoginPage() {
       localStorage.setItem("token", token);
       const decoded = decodeJwt(token);
       const role = decoded?.user_role;
+      const username = decoded?.sub || email;
+      logLogin(username);
       if (role === "ADMIN") {
         navigate("/admin/dashboard", { replace: true });
       } else {
